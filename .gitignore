@@ -1,6 +1,6 @@
-.idea/libraries
-.idea/*.xml
-.idea/sonarlint
+.idea/*
+!.idea/runConfigurations
+!.idea/codeStyles
 target/
 *.iml
 .classpath
