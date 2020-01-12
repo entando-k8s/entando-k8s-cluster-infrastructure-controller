@@ -1,4 +1,5 @@
 .idea/*
+!.idea/sonarlint.xml
 !.idea/runConfigurations
 !.idea/codeStyles
 target/
