@@ -258,7 +258,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
     @Test
     public void testDeployment() {
         //Given I use the 6.0.0 image version by default
-        System.setProperty(EntandoOperatorConfigProperty.ENTANDO_DOCKER_IMAGE_VERSION_DEFAULT.getJvmSystemProperty(), "6.0.0");
+        System.setProperty(EntandoOperatorConfigProperty.ENTANDO_DOCKER_IMAGE_VERSION_FALLBACK.getJvmSystemProperty(), "6.0.0");
         //And I have an KeycloakServer custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         //And a Keycloak instance is available
