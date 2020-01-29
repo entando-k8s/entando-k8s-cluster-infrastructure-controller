@@ -8,6 +8,7 @@ import org.entando.kubernetes.controller.KeycloakConnectionConfig;
 import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.spi.IngressingContainer;
 import org.entando.kubernetes.controller.spi.KeycloakAware;
+import org.entando.kubernetes.controller.spi.KubernetesPermission;
 import org.entando.kubernetes.controller.spi.TlsAware;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.plugin.ExpectedRole;
@@ -78,6 +79,15 @@ public class EntandoK8SServiceDeployableContainer implements KeycloakAware, Ingr
     @Override
     public Optional<String> getHealthCheckPath() {
         return Optional.of(getWebContextPath() + "/actuator/health");
+    }
+
+    @Override
+    public List<KubernetesPermission> getKubernetesPermissions() {
+        return Arrays.asList(new KubernetesPermission("entando.org", "*", "*"),
+                new KubernetesPermission("", "secrets", "create", "get", "update", "delete"),
+                new KubernetesPermission("", "configmaps", "*"),
+                new KubernetesPermission("", "namespaces", "get")
+        );
     }
 
 }

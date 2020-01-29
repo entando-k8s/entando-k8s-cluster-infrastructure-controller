@@ -17,6 +17,11 @@ public class EntandoK8SServiceDeployable extends InfrastructureDeployableBase {
     }
 
     @Override
+    public String getServiceAccountName() {
+        return "entando-k8s-service";
+    }
+
+    @Override
     public List<DeployableContainer> getContainers() {
         return containers;
     }
