@@ -1,5 +1,7 @@
 package org.entando.kubernetes.controller.clusterinfrastructure;
 
+import io.fabric8.kubernetes.api.model.EnvVar;
+import java.util.List;
 import java.util.Optional;
 import org.entando.kubernetes.controller.KeycloakClientConfig;
 import org.entando.kubernetes.controller.KeycloakConnectionConfig;
@@ -87,5 +89,10 @@ public class DigitalExchangeDeployableContainer extends EntandoDatabaseConsuming
     @Override
     protected DatabasePopulator buildDatabasePopulator() {
         return new DigitalExchangeDatabasePopulator(this);
+    }
+
+    @Override
+    public void addDatabaseConnectionVariables(List<EnvVar> list) {
+
     }
 }

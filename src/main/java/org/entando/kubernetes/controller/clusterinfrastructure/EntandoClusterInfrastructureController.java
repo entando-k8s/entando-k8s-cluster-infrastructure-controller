@@ -40,39 +40,40 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
 
     }
 
-    protected void processAddition(EntandoClusterInfrastructure newEntandoClusterInfrastructure) {
-        KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources().findKeycloak(newEntandoClusterInfrastructure);
-        deployDigitalExchange(newEntandoClusterInfrastructure, keycloakConnectionConfig);
+    @Override
+    protected void synchronizeDeploymentState(EntandoClusterInfrastructure entandoClusterInfrastructure) {
+        KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources().findKeycloak(entandoClusterInfrastructure);
+        deployDigitalExchange(entandoClusterInfrastructure, keycloakConnectionConfig);
 
-        ServiceDeploymentResult entandoK8SService = deployEntandoK8SService(newEntandoClusterInfrastructure,
+        ServiceDeploymentResult entandoK8SService = deployEntandoK8SService(entandoClusterInfrastructure,
                 keycloakConnectionConfig);
-        if (newEntandoClusterInfrastructure.getSpec().isDefault()) {
+        if (entandoClusterInfrastructure.getSpec().isDefault()) {
             k8sClient.secrets().overwriteControllerSecret(new SecretBuilder()
                     .withNewMetadata()
                     .withName(EntandoOperatorConfig.getEntandoInfrastructureSecretName())
                     .endMetadata()
-                    .addToStringData("entandoK8SServiceClientId", clientIdOf(newEntandoClusterInfrastructure))
+                    .addToStringData("entandoK8SServiceClientId", clientIdOf(entandoClusterInfrastructure))
                     .addToStringData("entandoK8SServiceInternalUrl", entandoK8SService.getInternalBaseUrl())
                     .addToStringData("entandoK8SServiceExternalUrl", entandoK8SService.getExternalBaseUrl())
                     .build());
         }
     }
 
-    protected void deployDigitalExchange(EntandoClusterInfrastructure newEntandoClusterInfrastructure,
+    protected void deployDigitalExchange(EntandoClusterInfrastructure entandoClusterInfrastructure,
             KeycloakConnectionConfig keycloakConnectionConfig) {
-        DatabaseServiceResult databaseServiceResult = prepareDatabaseService(newEntandoClusterInfrastructure,
-                newEntandoClusterInfrastructure.getSpec().getDbms(), "digexdb");
-        DigitalExchangeDeployable digitalExchangeDeployable = new DigitalExchangeDeployable(newEntandoClusterInfrastructure,
+        DatabaseServiceResult databaseServiceResult = prepareDatabaseService(entandoClusterInfrastructure,
+                entandoClusterInfrastructure.getSpec().getDbms(), "digexdb");
+        DigitalExchangeDeployable digitalExchangeDeployable = new DigitalExchangeDeployable(entandoClusterInfrastructure,
                 keycloakConnectionConfig, databaseServiceResult);
         new DeployCommand<>(digitalExchangeDeployable).execute(k8sClient, Optional.of(keycloakClient));
     }
 
-    private ServiceDeploymentResult deployEntandoK8SService(EntandoClusterInfrastructure newEntandoClusterInfrastructure,
+    private ServiceDeploymentResult deployEntandoK8SService(EntandoClusterInfrastructure entandoClusterInfrastructure,
             KeycloakConnectionConfig keycloakConnectionConfig) {
-        EntandoK8SServiceDeployable deployable = new EntandoK8SServiceDeployable(newEntandoClusterInfrastructure, keycloakConnectionConfig);
+        EntandoK8SServiceDeployable deployable = new EntandoK8SServiceDeployable(entandoClusterInfrastructure, keycloakConnectionConfig);
         DeployCommand<ServiceDeploymentResult> command = new DeployCommand<>(deployable);
         ServiceDeploymentResult result = command.execute(k8sClient, Optional.of(keycloakClient));
-        k8sClient.entandoResources().updateStatus(newEntandoClusterInfrastructure, command.getStatus());
+        k8sClient.entandoResources().updateStatus(entandoClusterInfrastructure, command.getStatus());
         return result;
     }
 

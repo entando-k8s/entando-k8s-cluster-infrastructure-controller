@@ -131,7 +131,6 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
 
     }
 
-
     private void verifySecretCreation() {
         Secret infrastructureSecret = client.secrets()
                 .withName(EntandoOperatorConfig.getEntandoInfrastructureSecretName()).get();

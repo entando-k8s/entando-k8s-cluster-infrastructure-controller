@@ -23,7 +23,6 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentStatus;
 import io.fabric8.kubernetes.api.model.extensions.HTTPIngressPath;
 import io.fabric8.kubernetes.api.model.extensions.Ingress;
-import io.fabric8.kubernetes.api.model.extensions.IngressStatus;
 import io.fabric8.kubernetes.client.Watcher.Action;
 import io.quarkus.runtime.StartupEvent;
 import java.util.Map;
@@ -90,7 +89,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
         System.setProperty(KubeUtils.ENTANDO_RESOURCE_ACTION, Action.ADDED.name());
         System.setProperty(KubeUtils.ENTANDO_RESOURCE_NAMESPACE, entandoClusterInfrastructure.getMetadata().getNamespace());
         System.setProperty(KubeUtils.ENTANDO_RESOURCE_NAME, entandoClusterInfrastructure.getMetadata().getName());
-        client.entandoResources().putEntandoCustomResource(entandoClusterInfrastructure);
+        client.entandoResources().createOrPatchEntandoResource(entandoClusterInfrastructure);
 
     }
 
@@ -169,7 +168,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
         //Then a Digital Exchange was created with a name that reflects the EntandoClusterInfrastructure and the fact that it is a JEE
         // service
         NamedArgumentCaptor<Service> serviceCaptor = forResourceNamed(Service.class, MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SERVICE);
-        verify(client.services()).createService(eq(newEntandoClusterInfrastructure), serviceCaptor.capture());
+        verify(client.services()).createOrReplaceService(eq(newEntandoClusterInfrastructure), serviceCaptor.capture());
         Service resultingService = serviceCaptor.getValue();
         //And a selector that matches the EntandoClusterInfrastructure  pods
         Map<String, String> selector = resultingService.getSpec().getSelector();
@@ -193,7 +192,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
         // service
         //Then a K8S Service was created with a name that reflects the EntandoClusterInfrastructure and the fact that it is a JEE service
         NamedArgumentCaptor<Service> serviceCaptor = forResourceNamed(Service.class, MY_CLUSTER_INFRASTRUCTURE_DIG_EX_SERVICE);
-        verify(client.services()).createService(eq(newEntandoClusterInfrastructure), serviceCaptor.capture());
+        verify(client.services()).createOrReplaceService(eq(newEntandoClusterInfrastructure), serviceCaptor.capture());
         Service resultingService = serviceCaptor.getValue();
         //And a selector that matches the EntandoClusterInfrastructure  pods
         Map<String, String> selector = resultingService.getSpec().getSelector();
@@ -212,7 +211,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
 
         //And a Mysql DB service was created
         NamedArgumentCaptor<Service> dbServiceCaptor = forResourceNamed(Service.class, MY_CLUSTER_INFRASTRUCTURE_DIG_EX_DB_SERVICE);
-        verify(client.services()).createService(eq(newEntandoClusterInfrastructure), dbServiceCaptor.capture());
+        verify(client.services()).createOrReplaceService(eq(newEntandoClusterInfrastructure), dbServiceCaptor.capture());
     }
 
     @Test
@@ -292,7 +291,8 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
         // the fact that it is the EntandoK8SService deployment
         NamedArgumentCaptor<Deployment> deploymentCaptor = forResourceNamed(Deployment.class,
                 MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_DEPLOYMENT);
-        verify(client.deployments(), atLeastOnce()).createDeployment(eq(newEntandoClusterInfrastructure), deploymentCaptor.capture());
+        verify(client.deployments(), atLeastOnce())
+                .createOrPatchDeployment(eq(newEntandoClusterInfrastructure), deploymentCaptor.capture());
         Deployment resultingDeployment = deploymentCaptor.getValue();
         //With a Pod Template that has labels linking it to the previously created K8S Service
         Map<String, String> selector = resultingDeployment.getSpec().getTemplate().getMetadata().getLabels();
@@ -313,6 +313,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
 
         //And is configured to use the previously installed Keycloak instance
         verifyKeycloakSettings(thePrimaryContainerOn(resultingDeployment), MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SECRET);
+        verifySpringSecuritySettings(thePrimaryContainerOn(resultingDeployment), MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SECRET);
         assertThat(theVariableNamed("SERVER_SERVLET_CONTEXT_PATH").on(thePrimaryContainerOn(resultingDeployment)), is(K8S));
 
         //And the Deployment state was reloaded from K8S
@@ -329,7 +330,8 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
         // the fact that it is the EntandoK8SService deployment
         NamedArgumentCaptor<Deployment> deploymentCaptor = forResourceNamed(Deployment.class,
                 MY_CLUSTER_INFRASTRUCTURE_DIG_EX_DEPLOYMENT);
-        verify(client.deployments(), atLeastOnce()).createDeployment(eq(newEntandoClusterInfrastructure), deploymentCaptor.capture());
+        verify(client.deployments(), atLeastOnce())
+                .createOrPatchDeployment(eq(newEntandoClusterInfrastructure), deploymentCaptor.capture());
         Deployment resultingDeployment = deploymentCaptor.getValue();
         //With a Pod Template that has labels linking it to the previously created K8S Service
         Map<String, String> selector = resultingDeployment.getSpec().getTemplate().getMetadata().getLabels();
@@ -362,7 +364,8 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
         //ANd a db deployment was created
         NamedArgumentCaptor<Deployment> dbDeploymentCaptor = forResourceNamed(Deployment.class,
                 MY_CLUSTER_INFRASTRUCTURE_DIG_EX_DB_DEPLOYMENT);
-        verify(client.deployments(), atLeastOnce()).createDeployment(eq(newEntandoClusterInfrastructure), dbDeploymentCaptor.capture());
+        verify(client.deployments(), atLeastOnce())
+                .createOrPatchDeployment(eq(newEntandoClusterInfrastructure), dbDeploymentCaptor.capture());
         LabeledArgumentCaptor<Pod> podCaptor = forResourceWithLabel(Pod.class, ENTANDO_CLUSTER_INFRASTRUCTURE_LABEL_NAME,
                 MY_CLUSTER_INFRASTRUCTURE)
                 .andWithLabel(KubeUtils.DB_JOB_LABEL_NAME, MY_CLUSTER_INFRASTRUCTURE + "-db-preparation-job");

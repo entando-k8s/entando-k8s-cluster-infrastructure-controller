@@ -1,19 +1,21 @@
 package org.entando.kubernetes.controller.clusterinfrastructure;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.entando.kubernetes.controller.KeycloakClientConfig;
 import org.entando.kubernetes.controller.KeycloakConnectionConfig;
 import org.entando.kubernetes.controller.KubeUtils;
-import org.entando.kubernetes.controller.spi.IngressingContainer;
-import org.entando.kubernetes.controller.spi.KeycloakAware;
+import org.entando.kubernetes.controller.database.DatabaseSchemaCreationResult;
+import org.entando.kubernetes.controller.spi.DatabasePopulator;
 import org.entando.kubernetes.controller.spi.KubernetesPermission;
-import org.entando.kubernetes.controller.spi.TlsAware;
+import org.entando.kubernetes.controller.spi.SpringBootDeployableContainer;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.plugin.ExpectedRole;
 
-public class EntandoK8SServiceDeployableContainer implements KeycloakAware, IngressingContainer, TlsAware {
+public class EntandoK8SServiceDeployableContainer implements SpringBootDeployableContainer {
 
     public static final String K8S_SVC_QUALIFIER = "k8s-svc";
     private static final String ENTANDO_K8S_SERVICE_IMAGE_NAME = "entando/entando-k8s-service";
@@ -29,6 +31,11 @@ public class EntandoK8SServiceDeployableContainer implements KeycloakAware, Ingr
 
     public static String clientIdOf(EntandoClusterInfrastructure infrastructure) {
         return infrastructure.getMetadata().getName() + "-" + K8S_SVC_QUALIFIER;
+    }
+
+    @Override
+    public DatabaseSchemaCreationResult getDatabaseSchema() {
+        return null;
     }
 
     @Override
@@ -90,4 +97,13 @@ public class EntandoK8SServiceDeployableContainer implements KeycloakAware, Ingr
         );
     }
 
+    @Override
+    public List<String> getDbSchemaQualifiers() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Optional<DatabasePopulator> useDatabaseSchemas(Map<String, DatabaseSchemaCreationResult> map) {
+        return Optional.empty();
+    }
 }
