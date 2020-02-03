@@ -23,6 +23,11 @@ public class DigitalExchangeDeployable extends InfrastructureDeployableBase impl
     }
 
     @Override
+    public int getReplicas() {
+        return super.entandoClusterInfrastructure.getSpec().getReplicas().orElse(1);
+    }
+
+    @Override
     public DatabaseServiceResult getDatabaseServiceResult() {
         return databaseServiceResult;
     }

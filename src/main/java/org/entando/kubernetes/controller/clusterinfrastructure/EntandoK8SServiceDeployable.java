@@ -22,6 +22,11 @@ public class EntandoK8SServiceDeployable extends InfrastructureDeployableBase {
     }
 
     @Override
+    public int getReplicas() {
+        return super.entandoClusterInfrastructure.getSpec().getReplicas().orElse(1);
+    }
+
+    @Override
     public List<DeployableContainer> getContainers() {
         return containers;
     }
