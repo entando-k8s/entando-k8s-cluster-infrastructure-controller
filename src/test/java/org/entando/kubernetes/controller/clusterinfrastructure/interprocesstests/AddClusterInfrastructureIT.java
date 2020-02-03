@@ -5,10 +5,13 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.fabric8.kubernetes.api.model.DoneablePod;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.dsl.PodResource;
 import java.util.concurrent.TimeUnit;
 import org.entando.kubernetes.controller.EntandoOperatorConfig;
 import org.entando.kubernetes.controller.clusterinfrastructure.DigitalExchangeDeployableContainer;
@@ -49,6 +52,7 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                         .fromNamespace(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE)
                         .deleteAll(EntandoKeycloakServer.class)
                         .fromNamespace(KeycloakIntegrationTestHelper.KEYCLOAK_NAMESPACE));
+        await().atMost(2, TimeUnit.MINUTES).ignoreExceptions().pollInterval(10, TimeUnit.SECONDS).until(this::killPgPod);
         if (EntandoOperatorTestConfig.getTestTarget() == TestTarget.K8S) {
             helper.clusterInfrastructure()
                     .listenAndRespondWithImageVersionUnderTest(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE);
@@ -58,6 +62,16 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                             controller::onStartup);
         }
         helper.keycloak().listenAndRespondWithLatestImage(KeycloakIntegrationTestHelper.KEYCLOAK_NAMESPACE);
+    }
+
+    private boolean killPgPod() {
+        PodResource<Pod, DoneablePod> resource = client.pods()
+                .inNamespace(KeycloakIntegrationTestHelper.KEYCLOAK_NAMESPACE).withName("pg-test");
+        if (resource.fromServer().get() == null) {
+            return true;
+        }
+        resource.delete();
+        return false;
     }
 
     @Test
