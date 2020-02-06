@@ -43,7 +43,6 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
     @Override
     protected void synchronizeDeploymentState(EntandoClusterInfrastructure entandoClusterInfrastructure) {
         KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources().findKeycloak(entandoClusterInfrastructure);
-        deployDigitalExchange(entandoClusterInfrastructure, keycloakConnectionConfig);
 
         ServiceDeploymentResult entandoK8SService = deployEntandoK8SService(entandoClusterInfrastructure,
                 keycloakConnectionConfig);
@@ -57,15 +56,6 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
                     .addToStringData("entandoK8SServiceExternalUrl", entandoK8SService.getExternalBaseUrl())
                     .build());
         }
-    }
-
-    protected void deployDigitalExchange(EntandoClusterInfrastructure entandoClusterInfrastructure,
-            KeycloakConnectionConfig keycloakConnectionConfig) {
-        DatabaseServiceResult databaseServiceResult = prepareDatabaseService(entandoClusterInfrastructure,
-                entandoClusterInfrastructure.getSpec().getDbms(), "digexdb");
-        DigitalExchangeDeployable digitalExchangeDeployable = new DigitalExchangeDeployable(entandoClusterInfrastructure,
-                keycloakConnectionConfig, databaseServiceResult);
-        new DeployCommand<>(digitalExchangeDeployable).execute(k8sClient, Optional.of(keycloakClient));
     }
 
     private ServiceDeploymentResult deployEntandoK8SService(EntandoClusterInfrastructure entandoClusterInfrastructure,

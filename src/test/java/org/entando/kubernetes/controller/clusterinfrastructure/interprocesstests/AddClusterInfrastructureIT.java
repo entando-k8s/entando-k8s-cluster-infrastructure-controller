@@ -14,7 +14,6 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import java.util.concurrent.TimeUnit;
 import org.entando.kubernetes.controller.EntandoOperatorConfig;
-import org.entando.kubernetes.controller.clusterinfrastructure.DigitalExchangeDeployableContainer;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoK8SServiceDeployableContainer;
 import org.entando.kubernetes.controller.common.TlsHelper;
@@ -92,7 +91,6 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
         SampleWriter.writeSample(clusterInfrastructure, "entando-cluster-infrastructure-with-embedded-postgresql-db");
         helper.createAndWaitForClusterInfrastructure(clusterInfrastructure, 30, true);
         //Then I expect to see
-        verifyDigitalExchangeDeployment();
         verifyK8sServiceDeployment();
         verifySecretCreation();
     }
@@ -108,14 +106,14 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                         + helper
                         .getDomainSuffix()
                         + "/k8s/actuator/health"));
-        Deployment userManagementDeployment = client.apps().deployments()
+        Deployment k8sSvcDeployment = client.apps().deployments()
                 .inNamespace(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE)
                 .withName(
                         CLUSTER_INFRASTRUCTURE_NAME + "-k8s-svc-deployment")
                 .get();
         assertThat(thePortNamed("k8s-svc-port")
                 .on(theContainerNamed("k8s-svc-container")
-                        .on(userManagementDeployment))
+                        .on(k8sSvcDeployment))
                 .getContainerPort(), is(8084));
         Service service = client.services()
                 .inNamespace(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE)
@@ -123,7 +121,7 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                         CLUSTER_INFRASTRUCTURE_NAME + "-k8s-svc-service")
                 .get();
         assertThat(thePortNamed("k8s-svc-port").on(service).getPort(), is(8084));
-        assertTrue(userManagementDeployment.getStatus().getReadyReplicas() >= 1);
+        assertTrue(k8sSvcDeployment.getStatus().getReadyReplicas() >= 1);
         assertTrue(helper.clusterInfrastructure().getOperations()
                 .inNamespace(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE)
                 .withName(CLUSTER_INFRASTRUCTURE_NAME)
@@ -131,17 +129,6 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
         String k8sServiceClientId = CLUSTER_INFRASTRUCTURE_NAME + "-"
                 + EntandoK8SServiceDeployableContainer.K8S_SVC_QUALIFIER;
         assertTrue(helper.keycloak().findClientById(k8sServiceClientId).isPresent());
-
-    }
-
-    protected void verifyDigitalExchangeDeployment() {
-        await().atMost(30, TimeUnit.SECONDS).ignoreExceptions().until(() -> HttpTestHelper
-                .read(TlsHelper.getDefaultProtocol() + "://" + CLUSTER_INFRASTRUCTURE_NAME + "."
-                        + helper.getDomainSuffix() + "/digital-exchange/index.jsp")
-                .contains("Entando - Welcome"));
-        String digitalExchangeClientId = CLUSTER_INFRASTRUCTURE_NAME + "-"
-                + DigitalExchangeDeployableContainer.DIGITAL_EXCHANGE_QUALIFIER;
-        assertTrue(helper.keycloak().findClientById(digitalExchangeClientId).isPresent());
 
     }
 
