@@ -25,7 +25,7 @@ import org.entando.kubernetes.controller.integrationtest.support.HttpTestHelper;
 import org.entando.kubernetes.controller.integrationtest.support.K8SIntegrationTestHelper;
 import org.entando.kubernetes.controller.integrationtest.support.KeycloakIntegrationTestHelper;
 import org.entando.kubernetes.controller.integrationtest.support.SampleWriter;
-import org.entando.kubernetes.model.DbmsImageVendor;
+import org.entando.kubernetes.model.DbmsVendor;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureBuilder;
 import org.entando.kubernetes.model.keycloakserver.EntandoKeycloakServer;
@@ -82,7 +82,7 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                 .withName(CLUSTER_INFRASTRUCTURE_NAME)
                 .endMetadata()
                 .withNewSpec()
-                .withDbms(DbmsImageVendor.POSTGRESQL)//Ignore atm
+                .withDbms(DbmsVendor.POSTGRESQL)//Ignore atm
                 .withDefault(true)
                 .withReplicas(1)
                 .withIngressHostName(CLUSTER_INFRASTRUCTURE_NAME + "."

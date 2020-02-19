@@ -1,10 +1,14 @@
 package org.entando.kubernetes.controller.clusterinfrastructure;
 
+import io.fabric8.kubernetes.api.model.EnvVar;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import org.entando.kubernetes.controller.EntandoOperatorConfig;
+import org.entando.kubernetes.controller.EntandoOperatorConfigProperty;
 import org.entando.kubernetes.controller.KeycloakClientConfig;
 import org.entando.kubernetes.controller.KeycloakConnectionConfig;
 import org.entando.kubernetes.controller.KubeUtils;
@@ -31,6 +35,15 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
 
     public static String clientIdOf(EntandoClusterInfrastructure infrastructure) {
         return infrastructure.getMetadata().getName() + "-" + K8S_SVC_QUALIFIER;
+    }
+
+    @Override
+    public void addEnvironmentVariables(List<EnvVar> vars) {
+        List<String> namespacesToObserve = EntandoOperatorConfig.getNamespacesToObserve();
+        if (!namespacesToObserve.isEmpty()) {
+            vars.add(new EnvVar(EntandoOperatorConfigProperty.ENTANDO_NAMESPACES_TO_OBSERVE.name(),
+                    namespacesToObserve.stream().collect(Collectors.joining(",")), null));
+        }
     }
 
     @Override
