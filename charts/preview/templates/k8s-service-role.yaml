@@ -21,13 +21,13 @@ rules:
       - update
   - apiGroups:
       - ""
-      resources:
-        - configmaps
-      verbs:
-        - "*"
+    resources:
+     - configmaps
+    verbs:
+      - "*"
   - apiGroups:
       - ""
-      resources:
-        - namespaces
-      verbs:
-        - get
+    resources:
+      - namespaces
+    verbs:
+      - get
