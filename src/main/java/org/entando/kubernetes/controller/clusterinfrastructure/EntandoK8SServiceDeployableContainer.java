@@ -31,11 +31,13 @@ import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.database.DatabaseSchemaCreationResult;
 import org.entando.kubernetes.controller.spi.DatabasePopulator;
 import org.entando.kubernetes.controller.spi.KubernetesPermission;
+import org.entando.kubernetes.controller.spi.ParameterizableContainer;
 import org.entando.kubernetes.controller.spi.SpringBootDeployableContainer;
+import org.entando.kubernetes.model.EntandoDeploymentSpec;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.plugin.ExpectedRole;
 
-public class EntandoK8SServiceDeployableContainer implements SpringBootDeployableContainer {
+public class EntandoK8SServiceDeployableContainer implements SpringBootDeployableContainer, ParameterizableContainer {
 
     public static final String K8S_SVC_QUALIFIER = "k8s-svc";
     private static final String ENTANDO_K8S_SERVICE_IMAGE_NAME = "entando/entando-k8s-service";
@@ -134,5 +136,10 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
     @Override
     public Optional<DatabasePopulator> useDatabaseSchemas(Map<String, DatabaseSchemaCreationResult> map) {
         return Optional.empty();
+    }
+
+    @Override
+    public EntandoDeploymentSpec getCustomResourceSpec() {
+        return this.entandoClusterInfrastructure.getSpec();
     }
 }
