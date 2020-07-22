@@ -41,6 +41,7 @@ import io.fabric8.kubernetes.api.model.extensions.HTTPIngressPath;
 import io.fabric8.kubernetes.api.model.extensions.Ingress;
 import io.fabric8.kubernetes.client.Watcher.Action;
 import io.quarkus.runtime.StartupEvent;
+import java.util.Collections;
 import java.util.Map;
 import org.entando.kubernetes.controller.EntandoOperatorConfigProperty;
 import org.entando.kubernetes.controller.KeycloakClientConfig;
@@ -57,6 +58,7 @@ import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.SimpleK8S
 import org.entando.kubernetes.controller.k8sclient.SimpleK8SClient;
 import org.entando.kubernetes.controller.test.support.FluentTraversals;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
+import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -80,7 +82,12 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
     private static final String MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SECRET = MY_CLUSTER_INFRASTRUCTURE_K8S_SVC + "-secret";
     private static final String MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_DEPLOYMENT = MY_CLUSTER_INFRASTRUCTURE_K8S_SVC + "-deployment";
     private static final String MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_CONTAINER = MY_CLUSTER_INFRASTRUCTURE_K8S_SVC + "-container";
-    private final EntandoClusterInfrastructure entandoClusterInfrastructure = newEntandoClusterInfrastructure();
+    public static final String PARAMETER_VALUE = "MY_VALUE";
+    public static final String PARAMETER_NAME = "MY_PARAM";
+    private final EntandoClusterInfrastructure entandoClusterInfrastructure = new EntandoClusterInfrastructureBuilder(
+            newEntandoClusterInfrastructure()).editSpec().withParameters(Collections.singletonMap(PARAMETER_NAME, PARAMETER_VALUE))
+            .endSpec().build();
+
     @Spy
     private final SimpleK8SClient<EntandoResourceClientDouble> client = new SimpleK8SClientDouble();
     @Mock
@@ -256,6 +263,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
         verifyKeycloakSettings(thePrimaryContainerOn(resultingDeployment), MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SECRET);
         verifySpringSecuritySettings(thePrimaryContainerOn(resultingDeployment), MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SECRET);
         assertThat(theVariableNamed("SERVER_SERVLET_CONTEXT_PATH").on(thePrimaryContainerOn(resultingDeployment)), is(K8S));
+        assertThat(theVariableNamed(PARAMETER_NAME).on(thePrimaryContainerOn(resultingDeployment)), is(PARAMETER_VALUE));
 
         //And the Deployment state was reloaded from K8S
         verify(client.deployments())
