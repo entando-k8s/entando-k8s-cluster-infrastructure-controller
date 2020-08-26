@@ -62,16 +62,24 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
 
         ServiceDeploymentResult entandoK8SService = deployEntandoK8SService(entandoClusterInfrastructure,
                 keycloakConnectionConfig);
+        overwriteClusterInfrastructureSecret(entandoClusterInfrastructure, entandoK8SService,
+                entandoClusterInfrastructure.getMetadata().getName() + "-connection-secret");
         if (entandoClusterInfrastructure.getSpec().isDefault()) {
-            k8sClient.secrets().overwriteControllerSecret(new SecretBuilder()
-                    .withNewMetadata()
-                    .withName(EntandoOperatorConfig.getEntandoInfrastructureSecretName())
-                    .endMetadata()
-                    .addToStringData("entandoK8SServiceClientId", clientIdOf(entandoClusterInfrastructure))
-                    .addToStringData("entandoK8SServiceInternalUrl", entandoK8SService.getInternalBaseUrl())
-                    .addToStringData("entandoK8SServiceExternalUrl", entandoK8SService.getExternalBaseUrl())
-                    .build());
+            overwriteClusterInfrastructureSecret(entandoClusterInfrastructure, entandoK8SService,
+                    EntandoOperatorConfig.getEntandoInfrastructureSecretName());
         }
+    }
+
+    private void overwriteClusterInfrastructureSecret(EntandoClusterInfrastructure entandoClusterInfrastructure,
+            ServiceDeploymentResult entandoK8SService, String secretName) {
+        k8sClient.secrets().overwriteControllerSecret(new SecretBuilder()
+                .withNewMetadata()
+                .withName(secretName)
+                .endMetadata()
+                .addToStringData("entandoK8SServiceClientId", clientIdOf(entandoClusterInfrastructure))
+                .addToStringData("entandoK8SServiceInternalUrl", entandoK8SService.getInternalBaseUrl())
+                .addToStringData("entandoK8SServiceExternalUrl", entandoK8SService.getExternalBaseUrl())
+                .build());
     }
 
     private ServiceDeploymentResult deployEntandoK8SService(EntandoClusterInfrastructure entandoClusterInfrastructure,
