@@ -23,8 +23,10 @@ import io.fabric8.kubernetes.api.model.extensions.Ingress;
 import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.ServiceDeploymentResult;
 import org.entando.kubernetes.controller.spi.IngressingDeployable;
+import org.entando.kubernetes.model.EntandoBaseCustomResource;
 import org.entando.kubernetes.model.EntandoCustomResource;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
+import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureSpec;
 
 public abstract class InfrastructureDeployableBase implements IngressingDeployable<ServiceDeploymentResult> {
 
@@ -36,7 +38,7 @@ public abstract class InfrastructureDeployableBase implements IngressingDeployab
     }
 
     @Override
-    public final EntandoCustomResource getCustomResource() {
+    public final EntandoBaseCustomResource<EntandoClusterInfrastructureSpec> getCustomResource() {
         return entandoClusterInfrastructure;
     }
 
