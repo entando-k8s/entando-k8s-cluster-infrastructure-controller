@@ -29,6 +29,7 @@ import org.entando.kubernetes.controller.KeycloakClientConfig;
 import org.entando.kubernetes.controller.KeycloakConnectionConfig;
 import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.database.DatabaseSchemaCreationResult;
+import org.entando.kubernetes.controller.spi.ConfigurableResourceContainer;
 import org.entando.kubernetes.controller.spi.DatabasePopulator;
 import org.entando.kubernetes.controller.spi.KubernetesPermission;
 import org.entando.kubernetes.controller.spi.ParameterizableContainer;
@@ -37,7 +38,8 @@ import org.entando.kubernetes.model.EntandoDeploymentSpec;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.plugin.ExpectedRole;
 
-public class EntandoK8SServiceDeployableContainer implements SpringBootDeployableContainer, ParameterizableContainer {
+public class EntandoK8SServiceDeployableContainer implements SpringBootDeployableContainer, ParameterizableContainer,
+        ConfigurableResourceContainer {
 
     public static final String K8S_SVC_QUALIFIER = "k8s-svc";
     private static final String ENTANDO_K8S_SERVICE_IMAGE_NAME = "entando/entando-k8s-service";
