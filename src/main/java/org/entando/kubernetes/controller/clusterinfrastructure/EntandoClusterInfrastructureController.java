@@ -27,10 +27,9 @@ import javax.inject.Inject;
 import org.entando.kubernetes.controller.AbstractDbAwareController;
 import org.entando.kubernetes.controller.DeployCommand;
 import org.entando.kubernetes.controller.EntandoOperatorConfig;
+import org.entando.kubernetes.controller.ExposedDeploymentResult;
 import org.entando.kubernetes.controller.KeycloakConnectionConfig;
-import org.entando.kubernetes.controller.ServiceDeploymentResult;
 import org.entando.kubernetes.controller.SimpleKeycloakClient;
-import org.entando.kubernetes.controller.database.DatabaseServiceResult;
 import org.entando.kubernetes.controller.k8sclient.SimpleK8SClient;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 
@@ -60,7 +59,7 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
     protected void synchronizeDeploymentState(EntandoClusterInfrastructure entandoClusterInfrastructure) {
         KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources().findKeycloak(entandoClusterInfrastructure);
 
-        ServiceDeploymentResult entandoK8SService = deployEntandoK8SService(entandoClusterInfrastructure,
+        ClusterInfrastructureDeploymentResult entandoK8SService = deployEntandoK8SService(entandoClusterInfrastructure,
                 keycloakConnectionConfig);
         overwriteClusterInfrastructureSecret(entandoClusterInfrastructure, entandoK8SService,
                 entandoClusterInfrastructure.getMetadata().getName() + "-connection-secret");
@@ -71,7 +70,7 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
     }
 
     private void overwriteClusterInfrastructureSecret(EntandoClusterInfrastructure entandoClusterInfrastructure,
-            ServiceDeploymentResult entandoK8SService, String secretName) {
+            ExposedDeploymentResult<?> entandoK8SService, String secretName) {
         k8sClient.secrets().overwriteControllerSecret(new SecretBuilder()
                 .withNewMetadata()
                 .withName(secretName)
@@ -82,11 +81,11 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
                 .build());
     }
 
-    private ServiceDeploymentResult deployEntandoK8SService(EntandoClusterInfrastructure entandoClusterInfrastructure,
+    private ClusterInfrastructureDeploymentResult deployEntandoK8SService(EntandoClusterInfrastructure entandoClusterInfrastructure,
             KeycloakConnectionConfig keycloakConnectionConfig) {
         EntandoK8SServiceDeployable deployable = new EntandoK8SServiceDeployable(entandoClusterInfrastructure, keycloakConnectionConfig);
-        DeployCommand<ServiceDeploymentResult> command = new DeployCommand<>(deployable);
-        ServiceDeploymentResult result = command.execute(k8sClient, Optional.of(keycloakClient));
+        DeployCommand<ClusterInfrastructureDeploymentResult, EntandoClusterInfrastructure> command = new DeployCommand<>(deployable);
+        ClusterInfrastructureDeploymentResult result = command.execute(k8sClient, Optional.of(keycloakClient));
         k8sClient.entandoResources().updateStatus(entandoClusterInfrastructure, command.getStatus());
         return result;
     }
