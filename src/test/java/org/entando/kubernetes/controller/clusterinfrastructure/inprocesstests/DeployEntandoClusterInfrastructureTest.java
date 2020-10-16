@@ -19,7 +19,6 @@ package org.entando.kubernetes.controller.clusterinfrastructure.inprocesstests;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.argThat;
@@ -31,13 +30,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceStatus;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentStatus;
-import io.fabric8.kubernetes.api.model.extensions.HTTPIngressPath;
 import io.fabric8.kubernetes.api.model.extensions.Ingress;
 import io.fabric8.kubernetes.client.Watcher.Action;
 import io.quarkus.runtime.StartupEvent;
@@ -51,7 +49,6 @@ import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInf
 import org.entando.kubernetes.controller.creators.KeycloakClientCreator;
 import org.entando.kubernetes.controller.inprocesstest.InProcessTestUtil;
 import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.KeycloakClientConfigArgumentCaptor;
-import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.LabeledArgumentCaptor;
 import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.NamedArgumentCaptor;
 import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.EntandoResourceClientDouble;
 import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.SimpleK8SClientDouble;
@@ -61,6 +58,7 @@ import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -68,9 +66,8 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-//in execute component test
-@Tag("in-process")
-public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, FluentTraversals {
+@Tags({@Tag("in-process"), @Tag("pre-deployment"), @Tag("component")})
+class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, FluentTraversals {
 
     public static final int PORT_8084 = 8084;
     private static final String MY_CLUSTER_INFRASTRUCTURE_INGRESS = MY_CLUSTER_INFRASTRUCTURE + "-" + KubeUtils.DEFAULT_INGRESS_SUFFIX;
@@ -85,8 +82,9 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
     public static final String PARAMETER_VALUE = "MY_VALUE";
     public static final String PARAMETER_NAME = "MY_PARAM";
     private final EntandoClusterInfrastructure entandoClusterInfrastructure = new EntandoClusterInfrastructureBuilder(
-            newEntandoClusterInfrastructure()).editSpec().withParameters(Collections.singletonMap(PARAMETER_NAME, PARAMETER_VALUE))
-            .endSpec().build();
+            newEntandoClusterInfrastructure()).editSpec()
+            .withParameters(Collections.singletonList(new EnvVar(PARAMETER_NAME, PARAMETER_VALUE, null)))
+                    .endSpec().build();
 
     @Spy
     private final SimpleK8SClient<EntandoResourceClientDouble> client = new SimpleK8SClientDouble();
@@ -105,7 +103,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
     }
 
     @Test
-    public void testSecrets() {
+    void testSecrets() {
         //Given I have an EntandoClusterInfrastructure custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         //And a Keycloak instance is available
@@ -142,7 +140,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
     }
 
     @Test
-    public void testService() {
+    void testService() {
         //Given I have an  EntandoClusterInfrastructure custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         final ServiceStatus entandoK8SServiceServiceStatus = new ServiceStatus();
@@ -182,7 +180,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
     }
 
     @Test
-    public void testIngress() {
+    void testIngress() {
         //Given I have an  EntandoClusterInfrastructure custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         //And a Keycloak instance is available
@@ -209,7 +207,7 @@ public class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil
     }
 
     @Test
-    public void testDeployment() {
+    void testDeployment() {
         //Given I use the 6.0.0 image version by default
         System.setProperty(EntandoOperatorConfigProperty.ENTANDO_DOCKER_IMAGE_VERSION_FALLBACK.getJvmSystemProperty(), "6.0.0");
         //And I have an KeycloakServer custom resource specifying a Wildfly database

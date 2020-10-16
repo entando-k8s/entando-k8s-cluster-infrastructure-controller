@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import org.entando.kubernetes.controller.EntandoOperatorConfig;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoK8SServiceDeployableContainer;
-import org.entando.kubernetes.controller.common.TlsHelper;
 import org.entando.kubernetes.controller.integrationtest.support.ClusterInfrastructureIntegrationTestHelper;
 import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig;
 import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig.TestTarget;
@@ -52,7 +51,7 @@ import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
 @Tags({@Tag("end-to-end"), @Tag("inter-process")})
-public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
+class AddClusterInfrastructureIT implements FluentIntegrationTesting {
 
     private static final String CLUSTER_INFRASTRUCTURE_NAME = EntandoOperatorTestConfig.calculateName("eti");
     protected K8SIntegrationTestHelper helper = new K8SIntegrationTestHelper();
@@ -90,7 +89,7 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
     }
 
     @Test
-    public void create() {
+    void create() {
         //When I create an EntandoClusterInfrastructure and I specify it to use PostgreSQL
 
         EntandoClusterInfrastructure clusterInfrastructure = new EntandoClusterInfrastructureBuilder().withNewMetadata()
@@ -118,7 +117,7 @@ public class AddClusterInfrastructureIT implements FluentIntegrationTesting {
 
     protected void verifyK8sServiceDeployment() {
         await().atMost(15, TimeUnit.SECONDS).until(() -> HttpTestHelper.statusOk(
-                TlsHelper.getDefaultProtocol() + "://" + CLUSTER_INFRASTRUCTURE_NAME + "."
+                HttpTestHelper.getDefaultProtocol() + "://" + CLUSTER_INFRASTRUCTURE_NAME + "."
                         + helper
                         .getDomainSuffix()
                         + "/k8s/actuator/health"));

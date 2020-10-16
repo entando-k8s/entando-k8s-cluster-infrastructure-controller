@@ -21,30 +21,27 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.extensions.Ingress;
 import org.entando.kubernetes.controller.KubeUtils;
-import org.entando.kubernetes.controller.ServiceDeploymentResult;
 import org.entando.kubernetes.controller.spi.IngressingDeployable;
-import org.entando.kubernetes.model.EntandoBaseCustomResource;
-import org.entando.kubernetes.model.EntandoCustomResource;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
-import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureSpec;
 
-public abstract class InfrastructureDeployableBase implements IngressingDeployable<ServiceDeploymentResult> {
+public abstract class InfrastructureDeployableBase implements
+        IngressingDeployable<ClusterInfrastructureDeploymentResult, EntandoClusterInfrastructure> {
 
     protected final EntandoClusterInfrastructure entandoClusterInfrastructure;
 
-    public InfrastructureDeployableBase(
+    protected InfrastructureDeployableBase(
             EntandoClusterInfrastructure entandoClusterInfrastructure) {
         this.entandoClusterInfrastructure = entandoClusterInfrastructure;
     }
 
     @Override
-    public final EntandoBaseCustomResource<EntandoClusterInfrastructureSpec> getCustomResource() {
+    public final EntandoClusterInfrastructure getCustomResource() {
         return entandoClusterInfrastructure;
     }
 
     @Override
-    public final ServiceDeploymentResult createResult(Deployment deployment, Service service, Ingress ingress, Pod pod) {
-        return new ServiceDeploymentResult(service, ingress);
+    public final ClusterInfrastructureDeploymentResult createResult(Deployment deployment, Service service, Ingress ingress, Pod pod) {
+        return new ClusterInfrastructureDeploymentResult(pod, service, ingress);
     }
 
     @Override
