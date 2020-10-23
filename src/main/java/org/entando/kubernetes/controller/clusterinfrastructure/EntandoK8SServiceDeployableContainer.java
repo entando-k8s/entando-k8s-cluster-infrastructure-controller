@@ -92,7 +92,7 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
     }
 
     @Override
-    public int getPort() {
+    public int getPrimaryPort() {
         return 8084;
     }
 
