@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 
-@Tags({@Tag("end-to-end"), @Tag("inter-process")})
+@Tags({@Tag("end-to-end"), @Tag("inter-process"), @Tag("post-deployment")})
 class AddClusterInfrastructureIT implements FluentIntegrationTesting {
 
     private static final String CLUSTER_INFRASTRUCTURE_NAME = EntandoOperatorTestConfig.calculateName("eti");

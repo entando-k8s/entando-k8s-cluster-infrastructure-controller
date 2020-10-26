@@ -83,7 +83,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
     public static final String PARAMETER_NAME = "MY_PARAM";
     private final EntandoClusterInfrastructure entandoClusterInfrastructure = new EntandoClusterInfrastructureBuilder(
             newEntandoClusterInfrastructure()).editSpec()
-            .withParameters(Collections.singletonList(new EnvVar(PARAMETER_NAME, PARAMETER_VALUE, null)))
+            .withEnvironmentVariables(Collections.singletonList(new EnvVar(PARAMETER_NAME, PARAMETER_VALUE, null)))
                     .endSpec().build();
 
     @Spy
