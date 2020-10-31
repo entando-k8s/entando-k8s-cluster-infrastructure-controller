@@ -46,7 +46,7 @@ import org.entando.kubernetes.controller.KeycloakClientConfig;
 import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.SimpleKeycloakClient;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
-import org.entando.kubernetes.controller.creators.KeycloakClientCreator;
+import org.entando.kubernetes.controller.common.KeycloakName;
 import org.entando.kubernetes.controller.inprocesstest.InProcessTestUtil;
 import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.KeycloakClientConfigArgumentCaptor;
 import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.NamedArgumentCaptor;
@@ -54,6 +54,7 @@ import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.EntandoRe
 import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.SimpleK8SClientDouble;
 import org.entando.kubernetes.controller.k8sclient.SimpleK8SClient;
 import org.entando.kubernetes.controller.test.support.FluentTraversals;
+import org.entando.kubernetes.model.ResourceReference;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,7 +108,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
         //Given I have an EntandoClusterInfrastructure custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         //And a Keycloak instance is available
-        client.secrets().overwriteControllerSecret(newKeycloakAdminSecret());
+        emulateKeycloakDeployment(client);
         //And Keycloak is receiving requests
         when(keycloakClient.prepareClientAndReturnSecret(any(KeycloakClientConfig.class))).thenReturn(KEYCLOAK_SECRET);
 
@@ -120,9 +121,9 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
         verify(client.secrets(), atLeastOnce())
                 .createSecretIfAbsent(eq(newEntandoClusterInfrastructure), entandoK8SServiceKeycloakSecretCaptor.capture());
         Secret entandoK8SServiceKeycloakSecret = entandoK8SServiceKeycloakSecretCaptor.getValue();
-        assertThat(entandoK8SServiceKeycloakSecret.getStringData().get(KeycloakClientCreator.CLIENT_ID_KEY),
+        assertThat(entandoK8SServiceKeycloakSecret.getStringData().get(KeycloakName.CLIENT_ID_KEY),
                 is(MY_CLUSTER_INFRASTRUCTURE_K8S_SVC));
-        assertThat(entandoK8SServiceKeycloakSecret.getStringData().get(KeycloakClientCreator.CLIENT_SECRET_KEY), is(KEYCLOAK_SECRET));
+        assertThat(entandoK8SServiceKeycloakSecret.getStringData().get(KeycloakName.CLIENT_SECRET_KEY), is(KEYCLOAK_SECRET));
 
         //Then a K8S Secret was created in the controllers' namespace pointing to various locations
         NamedArgumentCaptor<Secret> infrastructureUrlsSecretCaptor = forResourceNamed(Secret.class,
@@ -148,7 +149,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
                 .when(client.services().loadService(eq(newEntandoClusterInfrastructure), eq(MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SERVICE)))
                 .then(respondWithServiceStatus(entandoK8SServiceServiceStatus));
         //And a Keycloak instance is available
-        client.secrets().overwriteControllerSecret(newKeycloakAdminSecret());
+        client.secrets().overwriteControllerSecret(newKeycloakAdminSecret(new ResourceReference()));
 
         //When the EntandoClusterInfrastructureController is notified of the creation of the KeycloakServer
         entandoClusterInfrastructureController.onStartup(new StartupEvent());
@@ -184,7 +185,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
         //Given I have an  EntandoClusterInfrastructure custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         //And a Keycloak instance is available
-        client.secrets().overwriteControllerSecret(newKeycloakAdminSecret());
+        client.secrets().overwriteControllerSecret(newKeycloakAdminSecret(new ResourceReference()));
 
         //When the EntandoClusterInfrastructureController is notified of the creation of the  EntandoClusterInfrastructure
         entandoClusterInfrastructureController.onStartup(new StartupEvent());
@@ -213,7 +214,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
         //And I have an KeycloakServer custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         //And a Keycloak instance is available
-        client.secrets().overwriteControllerSecret(newKeycloakAdminSecret());
+        emulateKeycloakDeployment(client);
         //And K8S is receiving Deployment requests
         final DeploymentStatus entandok8SServiceDeploymentStatus = new DeploymentStatus();
         lenient()

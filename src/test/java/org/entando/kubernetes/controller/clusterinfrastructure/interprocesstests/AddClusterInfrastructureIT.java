@@ -30,6 +30,7 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import java.util.concurrent.TimeUnit;
 import org.entando.kubernetes.controller.EntandoOperatorConfig;
+import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoK8SServiceDeployableContainer;
 import org.entando.kubernetes.controller.integrationtest.support.ClusterInfrastructureIntegrationTestHelper;
@@ -104,7 +105,8 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                         + helper
                         .getDomainSuffix()).endSpec().build();
         SampleWriter.writeSample(clusterInfrastructure, "entando-cluster-infrastructure-with-embedded-postgresql-db");
-        helper.createAndWaitForClusterInfrastructure(clusterInfrastructure, 30, true);
+        helper.clusterInfrastructure().waitForClusterInfrastructure(clusterInfrastructure, 30, true);
+
         //Then I expect to see
         verifyK8sServiceDeployment();
         verifySecretCreation();
@@ -143,7 +145,7 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                 .fromServer().get().getStatus().forServerQualifiedBy("k8s-svc").isPresent());
         String k8sServiceClientId = CLUSTER_INFRASTRUCTURE_NAME + "-"
                 + EntandoK8SServiceDeployableContainer.K8S_SVC_QUALIFIER;
-        assertTrue(helper.keycloak().findClientById(k8sServiceClientId).isPresent());
+        assertTrue(helper.keycloak().findClientById(KeycloakIntegrationTestHelper.KEYCLOAK_REALM, k8sServiceClientId).isPresent());
 
     }
 

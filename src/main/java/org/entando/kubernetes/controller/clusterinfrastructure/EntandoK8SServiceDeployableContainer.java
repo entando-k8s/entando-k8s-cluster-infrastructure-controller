@@ -35,6 +35,7 @@ import org.entando.kubernetes.controller.spi.KubernetesPermission;
 import org.entando.kubernetes.controller.spi.ParameterizableContainer;
 import org.entando.kubernetes.controller.spi.SpringBootDeployableContainer;
 import org.entando.kubernetes.model.EntandoDeploymentSpec;
+import org.entando.kubernetes.model.app.KeycloakAwareSpec;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.plugin.ExpectedRole;
 
@@ -107,8 +108,13 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
                 new ExpectedRole(KubeUtils.ENTANDO_APP_ROLE),
                 new ExpectedRole(KubeUtils.ENTANDO_PLUGIN_ROLE)
         );
-        return new KeycloakClientConfig(KubeUtils.ENTANDO_KEYCLOAK_REALM,
+        return new KeycloakClientConfig(determineRealm(),
                 clientId, "Entando K8S Service", clientRoles, null);
+    }
+
+    @Override
+    public KeycloakAwareSpec getKeycloakAwareSpec() {
+        return entandoClusterInfrastructure.getSpec();
     }
 
     @Override
@@ -142,6 +148,6 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
 
     @Override
     public EntandoDeploymentSpec getCustomResourceSpec() {
-        return this.entandoClusterInfrastructure.getSpec();
+        return getKeycloakAwareSpec();
     }
 }
