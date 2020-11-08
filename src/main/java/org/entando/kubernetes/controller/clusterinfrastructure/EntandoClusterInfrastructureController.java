@@ -18,20 +18,21 @@ package org.entando.kubernetes.controller.clusterinfrastructure;
 
 import static org.entando.kubernetes.controller.clusterinfrastructure.EntandoK8SServiceDeployableContainer.clientIdOf;
 
-import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.runtime.StartupEvent;
 import java.util.Optional;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import org.entando.kubernetes.controller.AbstractDbAwareController;
-import org.entando.kubernetes.controller.DeployCommand;
-import org.entando.kubernetes.controller.EntandoOperatorConfig;
 import org.entando.kubernetes.controller.ExposedDeploymentResult;
+import org.entando.kubernetes.controller.IngressingDeployCommand;
 import org.entando.kubernetes.controller.KeycloakConnectionConfig;
 import org.entando.kubernetes.controller.SimpleKeycloakClient;
+import org.entando.kubernetes.controller.common.InfrastructureConfig;
 import org.entando.kubernetes.controller.k8sclient.SimpleK8SClient;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
+import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureSpec;
 
 public class EntandoClusterInfrastructureController extends AbstractDbAwareController<EntandoClusterInfrastructure> {
 
@@ -58,33 +59,36 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
     @Override
     protected void synchronizeDeploymentState(EntandoClusterInfrastructure entandoClusterInfrastructure) {
         KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources().findKeycloak(entandoClusterInfrastructure);
-
         ClusterInfrastructureDeploymentResult entandoK8SService = deployEntandoK8SService(entandoClusterInfrastructure,
                 keycloakConnectionConfig);
-        overwriteClusterInfrastructureSecret(entandoClusterInfrastructure, entandoK8SService,
-                entandoClusterInfrastructure.getMetadata().getName() + "-connection-secret");
+        saveClusterInfrastructureConnectionConfig(entandoClusterInfrastructure, entandoK8SService);
         if (entandoClusterInfrastructure.getSpec().isDefault()) {
-            overwriteClusterInfrastructureSecret(entandoClusterInfrastructure, entandoK8SService,
-                    EntandoOperatorConfig.getEntandoInfrastructureSecretName());
+            k8sClient.entandoResources().loadDefaultConfigMap()
+                    .addToData(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAMESPACE_KEY,
+                            entandoClusterInfrastructure.getMetadata().getNamespace())
+                    .addToData(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAME_KEY,
+                            entandoClusterInfrastructure.getMetadata().getName())
+                    .done();
         }
     }
 
-    private void overwriteClusterInfrastructureSecret(EntandoClusterInfrastructure entandoClusterInfrastructure,
-            ExposedDeploymentResult<?> entandoK8SService, String secretName) {
-        k8sClient.secrets().overwriteControllerSecret(new SecretBuilder()
+    private void saveClusterInfrastructureConnectionConfig(EntandoClusterInfrastructure entandoClusterInfrastructure,
+            ExposedDeploymentResult<?> entandoK8SService) {
+        k8sClient.secrets().createConfigMapIfAbsent(entandoClusterInfrastructure, new ConfigMapBuilder()
                 .withNewMetadata()
-                .withName(secretName)
+                .withName(InfrastructureConfig.connectionConfigMapNameFor(entandoClusterInfrastructure))
                 .endMetadata()
-                .addToStringData("entandoK8SServiceClientId", clientIdOf(entandoClusterInfrastructure))
-                .addToStringData("entandoK8SServiceInternalUrl", entandoK8SService.getInternalBaseUrl())
-                .addToStringData("entandoK8SServiceExternalUrl", entandoK8SService.getExternalBaseUrl())
+                .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_CLIENT_ID_KEY, clientIdOf(entandoClusterInfrastructure))
+                .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_INTERNAL_URL_KEY, entandoK8SService.getInternalBaseUrl())
+                .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_EXTERNAL_URL_KEY, entandoK8SService.getExternalBaseUrl())
                 .build());
     }
 
     private ClusterInfrastructureDeploymentResult deployEntandoK8SService(EntandoClusterInfrastructure entandoClusterInfrastructure,
             KeycloakConnectionConfig keycloakConnectionConfig) {
         EntandoK8SServiceDeployable deployable = new EntandoK8SServiceDeployable(entandoClusterInfrastructure, keycloakConnectionConfig);
-        DeployCommand<ClusterInfrastructureDeploymentResult, EntandoClusterInfrastructure> command = new DeployCommand<>(deployable);
+        IngressingDeployCommand<ClusterInfrastructureDeploymentResult, EntandoClusterInfrastructureSpec> command =
+                new IngressingDeployCommand<>(deployable);
         ClusterInfrastructureDeploymentResult result = command.execute(k8sClient, Optional.of(keycloakClient));
         k8sClient.entandoResources().updateStatus(entandoClusterInfrastructure, command.getStatus());
         return result;

@@ -23,9 +23,10 @@ import io.fabric8.kubernetes.api.model.extensions.Ingress;
 import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.spi.IngressingDeployable;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
+import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureSpec;
 
 public abstract class InfrastructureDeployableBase implements
-        IngressingDeployable<ClusterInfrastructureDeploymentResult, EntandoClusterInfrastructure> {
+        IngressingDeployable<ClusterInfrastructureDeploymentResult, EntandoClusterInfrastructureSpec> {
 
     protected final EntandoClusterInfrastructure entandoClusterInfrastructure;
 

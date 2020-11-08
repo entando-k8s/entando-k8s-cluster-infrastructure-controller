@@ -21,18 +21,16 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.fabric8.kubernetes.api.model.DoneablePod;
-import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.dsl.PodResource;
 import java.util.concurrent.TimeUnit;
 import org.entando.kubernetes.controller.EntandoOperatorConfig;
-import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoK8SServiceDeployableContainer;
+import org.entando.kubernetes.controller.common.InfrastructureConfig;
 import org.entando.kubernetes.controller.integrationtest.support.ClusterInfrastructureIntegrationTestHelper;
 import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig;
 import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig.TestTarget;
@@ -62,12 +60,14 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
     @BeforeEach
     public void cleanup() {
         client = helper.getClient();
+        helper.keycloak().prepareDefaultKeycloakSecretAndConfigMap();
+        helper.keycloak().deleteRealm(KeycloakIntegrationTestHelper.KEYCLOAK_REALM);
         helper.setTextFixture(
                 deleteAll(EntandoClusterInfrastructure.class)
                         .fromNamespace(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE)
                         .deleteAll(EntandoKeycloakServer.class)
                         .fromNamespace(KeycloakIntegrationTestHelper.KEYCLOAK_NAMESPACE));
-        await().atMost(2, TimeUnit.MINUTES).ignoreExceptions().pollInterval(10, TimeUnit.SECONDS).until(this::killPgPod);
+        helper.externalDatabases().deletePgTestPod(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE);
         if (EntandoOperatorTestConfig.getTestTarget() == TestTarget.K8S) {
             helper.clusterInfrastructure()
                     .listenAndRespondWithImageVersionUnderTest(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE);
@@ -76,17 +76,6 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                     .listenAndRespondWithStartupEvent(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE,
                             controller::onStartup);
         }
-        helper.keycloak().listenAndRespondWithLatestImage(KeycloakIntegrationTestHelper.KEYCLOAK_NAMESPACE);
-    }
-
-    private boolean killPgPod() {
-        PodResource<Pod, DoneablePod> resource = client.pods()
-                .inNamespace(KeycloakIntegrationTestHelper.KEYCLOAK_NAMESPACE).withName("pg-test");
-        if (resource.fromServer().get() == null) {
-            return true;
-        }
-        resource.delete();
-        return false;
     }
 
     @Test
@@ -100,6 +89,9 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                 .withNewSpec()
                 .withDbms(DbmsVendor.POSTGRESQL)//Ignore atm
                 .withDefault(true)
+                .withNewKeycloakToUse()
+                .withRealm(KeycloakIntegrationTestHelper.KEYCLOAK_REALM)
+                .endKeycloakToUse()
                 .withReplicas(1)
                 .withIngressHostName(CLUSTER_INFRASTRUCTURE_NAME + "."
                         + helper
@@ -109,7 +101,7 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
 
         //Then I expect to see
         verifyK8sServiceDeployment();
-        verifySecretCreation();
+        verifyConnectionConfigCreation(clusterInfrastructure);
     }
 
     @AfterEach
@@ -149,12 +141,12 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
 
     }
 
-    private void verifySecretCreation() {
-        Secret infrastructureSecret = client.secrets()
-                .withName(EntandoOperatorConfig.getEntandoInfrastructureSecretName()).get();
-        assertNotNull(infrastructureSecret.getData().get("entandoK8SServiceInternalUrl"));
-        assertNotNull(infrastructureSecret.getData().get("entandoK8SServiceInternalUrl"));
-        assertNotNull(infrastructureSecret.getData().get("entandoK8SServiceClientId"));
+    private void verifyConnectionConfigCreation(EntandoClusterInfrastructure infrastructure) {
+        ConfigMap configMap = client.configMaps().inNamespace(infrastructure.getMetadata().getNamespace())
+                .withName(InfrastructureConfig.connectionConfigMapNameFor(infrastructure)).get();
+        assertNotNull(configMap.getData().get(InfrastructureConfig.ENTANDO_K8S_SERVICE_INTERNAL_URL_KEY));
+        assertNotNull(configMap.getData().get(InfrastructureConfig.ENTANDO_K8S_SERVICE_EXTERNAL_URL_KEY));
+        assertNotNull(configMap.getData().get(InfrastructureConfig.ENTANDO_K8S_SERVICE_CLIENT_ID_KEY));
     }
 
 }

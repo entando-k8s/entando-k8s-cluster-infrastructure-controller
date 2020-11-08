@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -46,6 +47,7 @@ import org.entando.kubernetes.controller.KeycloakClientConfig;
 import org.entando.kubernetes.controller.KubeUtils;
 import org.entando.kubernetes.controller.SimpleKeycloakClient;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
+import org.entando.kubernetes.controller.common.InfrastructureConfig;
 import org.entando.kubernetes.controller.common.KeycloakName;
 import org.entando.kubernetes.controller.inprocesstest.InProcessTestUtil;
 import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.KeycloakClientConfigArgumentCaptor;
@@ -54,7 +56,6 @@ import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.EntandoRe
 import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.SimpleK8SClientDouble;
 import org.entando.kubernetes.controller.k8sclient.SimpleK8SClient;
 import org.entando.kubernetes.controller.test.support.FluentTraversals;
-import org.entando.kubernetes.model.ResourceReference;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,7 +86,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
     private final EntandoClusterInfrastructure entandoClusterInfrastructure = new EntandoClusterInfrastructureBuilder(
             newEntandoClusterInfrastructure()).editSpec()
             .withEnvironmentVariables(Collections.singletonList(new EnvVar(PARAMETER_NAME, PARAMETER_VALUE, null)))
-                    .endSpec().build();
+            .endSpec().build();
 
     @Spy
     private final SimpleK8SClient<EntandoResourceClientDouble> client = new SimpleK8SClientDouble();
@@ -125,19 +126,24 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
                 is(MY_CLUSTER_INFRASTRUCTURE_K8S_SVC));
         assertThat(entandoK8SServiceKeycloakSecret.getStringData().get(KeycloakName.CLIENT_SECRET_KEY), is(KEYCLOAK_SECRET));
 
-        //Then a K8S Secret was created in the controllers' namespace pointing to various locations
-        NamedArgumentCaptor<Secret> infrastructureUrlsSecretCaptor = forResourceNamed(Secret.class,
-                "entando-cluster-infrastructure-secret");
+        //Then a K8S ConfigMap was created in the controllers' namespace pointing to various locations
+        NamedArgumentCaptor<ConfigMap> infrastructureUrlsSecretCaptor = forResourceNamed(ConfigMap.class,
+                InfrastructureConfig.connectionConfigMapNameFor(newEntandoClusterInfrastructure));
         verify(client.secrets(), atLeastOnce())
-                .overwriteControllerSecret(infrastructureUrlsSecretCaptor.capture());
-        Secret infrastructureUrlsSecret = infrastructureUrlsSecretCaptor.getValue();
-        assertThat(infrastructureUrlsSecret.getStringData().get("entandoK8SServiceClientId"),
+                .createConfigMapIfAbsent(eq(newEntandoClusterInfrastructure), infrastructureUrlsSecretCaptor.capture());
+        ConfigMap infrastructureUrlsSecret = infrastructureUrlsSecretCaptor.getValue();
+        assertThat(infrastructureUrlsSecret.getData().get(InfrastructureConfig.ENTANDO_K8S_SERVICE_CLIENT_ID_KEY),
                 is(MY_CLUSTER_INFRASTRUCTURE_K8S_SVC));
-        assertThat(infrastructureUrlsSecret.getStringData().get("entandoK8SServiceInternalUrl"),
+        assertThat(infrastructureUrlsSecret.getData().get(InfrastructureConfig.ENTANDO_K8S_SERVICE_INTERNAL_URL_KEY),
                 is("http://" + MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SERVICE
                         + "." + MY_CLUSTER_INFRASTRUCTURE_NAMESPACE + ".svc.cluster.local:8084/k8s"));
-        assertThat(infrastructureUrlsSecret.getStringData().get("entandoK8SServiceExternalUrl"),
+        assertThat(infrastructureUrlsSecret.getData().get(InfrastructureConfig.ENTANDO_K8S_SERVICE_EXTERNAL_URL_KEY),
                 is("https://entando-infra.192.168.0.100.nip.io/k8s"));
+        //And the Operator's default ConfigMap points to the previously created EntandoClusterINfrastructure as default
+        assertThat(client.entandoResources().loadDefaultConfigMap().getData()
+                .get(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAME_KEY), is(MY_CLUSTER_INFRASTRUCTURE));
+        assertThat(client.entandoResources().loadDefaultConfigMap().getData()
+                .get(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAMESPACE_KEY), is(MY_CLUSTER_INFRASTRUCTURE_NAMESPACE));
     }
 
     @Test
@@ -149,7 +155,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
                 .when(client.services().loadService(eq(newEntandoClusterInfrastructure), eq(MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SERVICE)))
                 .then(respondWithServiceStatus(entandoK8SServiceServiceStatus));
         //And a Keycloak instance is available
-        client.secrets().overwriteControllerSecret(newKeycloakAdminSecret(new ResourceReference()));
+        emulateKeycloakDeployment(client);
 
         //When the EntandoClusterInfrastructureController is notified of the creation of the KeycloakServer
         entandoClusterInfrastructureController.onStartup(new StartupEvent());
@@ -185,7 +191,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
         //Given I have an  EntandoClusterInfrastructure custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         //And a Keycloak instance is available
-        client.secrets().overwriteControllerSecret(newKeycloakAdminSecret(new ResourceReference()));
+        emulateKeycloakDeployment(client);
 
         //When the EntandoClusterInfrastructureController is notified of the creation of the  EntandoClusterInfrastructure
         entandoClusterInfrastructureController.onStartup(new StartupEvent());
