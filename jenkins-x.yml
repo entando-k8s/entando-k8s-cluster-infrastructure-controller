@@ -5,10 +5,10 @@ pipelineConfig:
       value: ci
     - name: TEST_DEPLOYMENT
       value: "true"
-    - name: UPDATE_OWASP_DB
-      value: "false"
     - name: ENTANDO_DOCKER_IMAGE_INFO_CONFIGMAP
       value: "entando-docker-image-info-v6.1"
+    - name: ENTANDO_K8S_OPERATOR_SECURITY_MODE
+      value: "strict"
     - name: EXECUTABLE_TYPE
       valueFrom:
         secretKeyRef:
