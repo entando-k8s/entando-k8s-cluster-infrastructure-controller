@@ -71,6 +71,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @Tags({@Tag("in-process"), @Tag("pre-deployment"), @Tag("component")})
+@SuppressWarnings({"java:S6068", "java:S6073"})//Because SONAR can't recognize custom matchers
 class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, FluentTraversals {
 
     public static final int PORT_8084 = 8084;
