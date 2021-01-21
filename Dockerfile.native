@@ -4,7 +4,7 @@ LABEL name="Entando K8S Controller Coordinator" \
       vendor="Entando" \
       version="v${VERSION}" \
       release="6" \
-      summary="This container processes the EntandoClusterInfrastructure custom resource and deploys the Entando K8S Service."
+      summary="This container processes the EntandoClusterInfrastructure custom resource and deploys the Entando K8S Service." \
       description="This is a run-to-completion container. It processes new EntandoClusterInfrastructure Custom \
                    Resources and deploys an instance of the Entando K8S Service \
                    to your cluster. This Entando K8S Service will be  configured to use a previously installed Keycloak Server. \
