@@ -17,6 +17,7 @@
 package org.entando.kubernetes.controller.clusterinfrastructure;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -28,9 +29,11 @@ import org.entando.kubernetes.controller.EntandoOperatorConfigProperty;
 import org.entando.kubernetes.controller.KeycloakClientConfig;
 import org.entando.kubernetes.controller.KeycloakConnectionConfig;
 import org.entando.kubernetes.controller.KubeUtils;
+import org.entando.kubernetes.controller.common.DockerImageInfo;
 import org.entando.kubernetes.controller.database.DatabaseSchemaCreationResult;
 import org.entando.kubernetes.controller.spi.ConfigurableResourceContainer;
 import org.entando.kubernetes.controller.spi.DatabasePopulator;
+import org.entando.kubernetes.controller.spi.DefaultDockerImageInfo;
 import org.entando.kubernetes.controller.spi.KubernetesPermission;
 import org.entando.kubernetes.controller.spi.ParameterizableContainer;
 import org.entando.kubernetes.controller.spi.SpringBootDeployableContainer;
@@ -59,12 +62,14 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
     }
 
     @Override
-    public void addEnvironmentVariables(List<EnvVar> vars) {
+    public List<EnvVar> getEnvironmentVariables() {
+        List<EnvVar> vars = new ArrayList<>();
         List<String> namespacesToObserve = EntandoOperatorConfig.getNamespacesToObserve();
         if (!namespacesToObserve.isEmpty()) {
             vars.add(new EnvVar(EntandoOperatorConfigProperty.ENTANDO_NAMESPACES_TO_OBSERVE.name(),
                     namespacesToObserve.stream().collect(Collectors.joining(",")), null));
         }
+        return vars;
     }
 
     @Override
@@ -83,8 +88,8 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
     }
 
     @Override
-    public String determineImageToUse() {
-        return ENTANDO_K8S_SERVICE_IMAGE_NAME;
+    public DockerImageInfo getDockerImageInfo() {
+        return new DefaultDockerImageInfo(ENTANDO_K8S_SERVICE_IMAGE_NAME);
     }
 
     @Override

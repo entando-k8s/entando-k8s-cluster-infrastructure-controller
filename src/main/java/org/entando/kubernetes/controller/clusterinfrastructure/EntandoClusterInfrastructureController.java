@@ -34,7 +34,7 @@ import org.entando.kubernetes.controller.k8sclient.SimpleK8SClient;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureSpec;
 
-public class EntandoClusterInfrastructureController extends AbstractDbAwareController<EntandoClusterInfrastructure> {
+public class EntandoClusterInfrastructureController extends AbstractDbAwareController<EntandoClusterInfrastructureSpec, EntandoClusterInfrastructure> {
 
     @Inject
     public EntandoClusterInfrastructureController(KubernetesClient kubernetesClient) {
