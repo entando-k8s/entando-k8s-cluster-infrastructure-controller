@@ -17,8 +17,10 @@
 package org.entando.kubernetes.controller.clusterinfrastructure.inprocesstests;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.argThat;
@@ -215,9 +217,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
 
     @Test
     void testDeployment() {
-        //Given I use the 6.0.0 image version by default
-        System.setProperty(EntandoOperatorConfigProperty.ENTANDO_DOCKER_IMAGE_VERSION_FALLBACK.getJvmSystemProperty(), "6.0.0");
-        //And I have an KeycloakServer custom resource specifying a Wildfly database
+        //Given I have an KeycloakServer custom resource specifying a Wildfly database
         final EntandoClusterInfrastructure newEntandoClusterInfrastructure = this.entandoClusterInfrastructure;
         //And a Keycloak instance is available
         emulateKeycloakDeployment(client);
@@ -256,8 +256,8 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
                 .on(resultingDeployment);
         assertThat(thePortNamed(K8S_SERVICE_PORT).on(theUserManagementContainer).getContainerPort(), is(PORT_8084));
         assertThat(thePortNamed(K8S_SERVICE_PORT).on(theUserManagementContainer).getProtocol(), is(TCP));
-        //And that uses the image reflecting the custom registry and Entando image version specified
-        assertThat(theUserManagementContainer.getImage(), is("docker.io/entando/entando-k8s-service:6.0.0"));
+        //And that uses the image reflecting the Entando image
+        assertThat(theUserManagementContainer.getImage(), containsString("entando/entando-k8s-service"));
         //And Keycloak was configured to support OIDC Integration from the EntandoClusterInfrastructure
         KeycloakClientConfigArgumentCaptor keycloakClientConfigCaptor = forClientId(MY_CLUSTER_INFRASTRUCTURE_K8S_SVC);
         verify(keycloakClient).prepareClientAndReturnSecret(keycloakClientConfigCaptor.capture());
