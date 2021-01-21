@@ -1,6 +1,6 @@
 FROM fabric8/java-ubi-openjdk11-jdk
 ARG VERSION
-LABEL name="Entando K8S Controller Coordinator" \
+LABEL name="Entando K8S Cluster Infrastructure Controller" \
       vendor="Entando" \
       version="v${VERSION}" \
       release="6" \

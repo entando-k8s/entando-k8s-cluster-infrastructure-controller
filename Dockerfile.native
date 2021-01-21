@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 ARG VERSION
-LABEL name="Entando K8S Controller Coordinator" \
+LABEL name="Entando K8S Cluster Infrastructure Controller" \
       vendor="Entando" \
       version="v${VERSION}" \
       release="6" \
