@@ -20,7 +20,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.argThat;
@@ -44,19 +43,19 @@ import io.fabric8.kubernetes.client.Watcher.Action;
 import io.quarkus.runtime.StartupEvent;
 import java.util.Collections;
 import java.util.Map;
-import org.entando.kubernetes.controller.EntandoOperatorConfigProperty;
-import org.entando.kubernetes.controller.KeycloakClientConfig;
-import org.entando.kubernetes.controller.KubeUtils;
-import org.entando.kubernetes.controller.SimpleKeycloakClient;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
-import org.entando.kubernetes.controller.common.InfrastructureConfig;
-import org.entando.kubernetes.controller.common.KeycloakName;
 import org.entando.kubernetes.controller.inprocesstest.InProcessTestUtil;
 import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.KeycloakClientConfigArgumentCaptor;
 import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.NamedArgumentCaptor;
 import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.EntandoResourceClientDouble;
 import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.SimpleK8SClientDouble;
-import org.entando.kubernetes.controller.k8sclient.SimpleK8SClient;
+import org.entando.kubernetes.controller.spi.common.NameUtils;
+import org.entando.kubernetes.controller.spi.container.KeycloakClientConfig;
+import org.entando.kubernetes.controller.spi.container.KeycloakName;
+import org.entando.kubernetes.controller.support.client.InfrastructureConfig;
+import org.entando.kubernetes.controller.support.client.SimpleK8SClient;
+import org.entando.kubernetes.controller.support.client.SimpleKeycloakClient;
+import org.entando.kubernetes.controller.support.common.KubeUtils;
 import org.entando.kubernetes.controller.test.support.FluentTraversals;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureBuilder;
@@ -71,11 +70,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @Tags({@Tag("in-process"), @Tag("pre-deployment"), @Tag("component")})
-@SuppressWarnings({"java:S6068", "java:S6073"})//Because SONAR can't recognize custom matchers
+//Because SONAR can't recognize custom matchers
+@SuppressWarnings({"java:S6068", "java:S6073"})
 class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, FluentTraversals {
 
     public static final int PORT_8084 = 8084;
-    private static final String MY_CLUSTER_INFRASTRUCTURE_INGRESS = MY_CLUSTER_INFRASTRUCTURE + "-" + KubeUtils.DEFAULT_INGRESS_SUFFIX;
+    private static final String MY_CLUSTER_INFRASTRUCTURE_INGRESS = MY_CLUSTER_INFRASTRUCTURE + "-" + NameUtils.DEFAULT_INGRESS_SUFFIX;
 
     private static final String MY_CLUSTER_INFRASTRUCTURE_K8S_SVC = MY_CLUSTER_INFRASTRUCTURE + "-k8s-svc";
     private static final String MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SERVICE = MY_CLUSTER_INFRASTRUCTURE_K8S_SVC + "-service";
@@ -83,7 +83,6 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
     private static final String K8S_SERVICE_PORT = "k8s-svc-port";
     private static final String MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SECRET = MY_CLUSTER_INFRASTRUCTURE_K8S_SVC + "-secret";
     private static final String MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_DEPLOYMENT = MY_CLUSTER_INFRASTRUCTURE_K8S_SVC + "-deployment";
-    private static final String MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_CONTAINER = MY_CLUSTER_INFRASTRUCTURE_K8S_SVC + "-container";
     public static final String PARAMETER_VALUE = "MY_VALUE";
     public static final String PARAMETER_NAME = "MY_PARAM";
     private final EntandoClusterInfrastructure entandoClusterInfrastructure = new EntandoClusterInfrastructureBuilder(
@@ -142,7 +141,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
                         + "." + MY_CLUSTER_INFRASTRUCTURE_NAMESPACE + ".svc.cluster.local:8084/k8s"));
         assertThat(infrastructureUrlsSecret.getData().get(InfrastructureConfig.ENTANDO_K8S_SERVICE_EXTERNAL_URL_KEY),
                 is("https://entando-infra.192.168.0.100.nip.io/k8s"));
-        //And the Operator's default ConfigMap points to the previously created EntandoClusterINfrastructure as default
+        //And the Operator's default ConfigMap points to the previously created EntandoClusterInfrastructure as default
         assertThat(client.entandoResources().loadDefaultConfigMap().getData()
                 .get(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAME_KEY), is(MY_CLUSTER_INFRASTRUCTURE));
         assertThat(client.entandoResources().loadDefaultConfigMap().getData()

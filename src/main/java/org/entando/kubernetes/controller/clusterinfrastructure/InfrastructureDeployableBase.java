@@ -20,8 +20,8 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.extensions.Ingress;
-import org.entando.kubernetes.controller.KubeUtils;
-import org.entando.kubernetes.controller.spi.IngressingDeployable;
+import org.entando.kubernetes.controller.spi.common.NameUtils;
+import org.entando.kubernetes.controller.spi.deployable.IngressingDeployable;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureSpec;
 
@@ -47,7 +47,7 @@ public abstract class InfrastructureDeployableBase implements
 
     @Override
     public final String getIngressName() {
-        return KubeUtils.standardIngressName(entandoClusterInfrastructure);
+        return NameUtils.standardIngressName(entandoClusterInfrastructure);
     }
 
     @Override

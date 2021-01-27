@@ -21,22 +21,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.entando.kubernetes.controller.EntandoOperatorConfig;
-import org.entando.kubernetes.controller.EntandoOperatorConfigProperty;
-import org.entando.kubernetes.controller.KeycloakClientConfig;
-import org.entando.kubernetes.controller.KeycloakConnectionConfig;
-import org.entando.kubernetes.controller.KubeUtils;
-import org.entando.kubernetes.controller.common.DockerImageInfo;
-import org.entando.kubernetes.controller.database.DatabaseSchemaCreationResult;
-import org.entando.kubernetes.controller.spi.ConfigurableResourceContainer;
-import org.entando.kubernetes.controller.spi.DatabasePopulator;
-import org.entando.kubernetes.controller.spi.DefaultDockerImageInfo;
-import org.entando.kubernetes.controller.spi.KubernetesPermission;
-import org.entando.kubernetes.controller.spi.ParameterizableContainer;
-import org.entando.kubernetes.controller.spi.SpringBootDeployableContainer;
+import org.entando.kubernetes.controller.spi.container.ConfigurableResourceContainer;
+import org.entando.kubernetes.controller.spi.container.DatabaseSchemaConnectionInfo;
+import org.entando.kubernetes.controller.spi.container.DockerImageInfo;
+import org.entando.kubernetes.controller.spi.container.KeycloakClientConfig;
+import org.entando.kubernetes.controller.spi.container.KeycloakConnectionConfig;
+import org.entando.kubernetes.controller.spi.container.KubernetesPermission;
+import org.entando.kubernetes.controller.spi.container.ParameterizableContainer;
+import org.entando.kubernetes.controller.spi.container.SpringBootDeployableContainer;
+import org.entando.kubernetes.controller.support.common.EntandoOperatorConfig;
+import org.entando.kubernetes.controller.support.common.EntandoOperatorConfigProperty;
+import org.entando.kubernetes.controller.support.common.KubeUtils;
 import org.entando.kubernetes.model.EntandoIngressingDeploymentSpec;
 import org.entando.kubernetes.model.KeycloakAwareSpec;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
@@ -73,11 +70,6 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
     }
 
     @Override
-    public DatabaseSchemaCreationResult getDatabaseSchema() {
-        return null;
-    }
-
-    @Override
     public int getCpuLimitMillicores() {
         return 1000;
     }
@@ -89,7 +81,7 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
 
     @Override
     public DockerImageInfo getDockerImageInfo() {
-        return new DefaultDockerImageInfo(ENTANDO_K8S_SERVICE_IMAGE_NAME);
+        return new DockerImageInfo(ENTANDO_K8S_SERVICE_IMAGE_NAME);
     }
 
     @Override
@@ -142,17 +134,19 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
     }
 
     @Override
-    public List<String> getDbSchemaQualifiers() {
+    public EntandoIngressingDeploymentSpec getCustomResourceSpec() {
+        return getKeycloakAwareSpec();
+    }
+
+    @Override
+    public List<DatabaseSchemaConnectionInfo> getSchemaConnectionInfo() {
+        //No database. This is legacy inherited from SpringBootDeployableContainer
         return Collections.emptyList();
     }
 
     @Override
-    public Optional<DatabasePopulator> useDatabaseSchemas(Map<String, DatabaseSchemaCreationResult> map) {
+    public Optional<DatabaseSchemaConnectionInfo> getDatabaseSchema() {
+        //No database. This is legacy inherited from SpringBootDeployableContainer
         return Optional.empty();
-    }
-
-    @Override
-    public EntandoIngressingDeploymentSpec getCustomResourceSpec() {
-        return getKeycloakAwareSpec();
     }
 }
