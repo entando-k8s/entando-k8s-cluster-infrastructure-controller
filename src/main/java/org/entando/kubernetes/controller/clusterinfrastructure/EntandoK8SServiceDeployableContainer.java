@@ -64,7 +64,7 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
         List<String> namespacesToObserve = EntandoOperatorConfig.getNamespacesToObserve();
         if (!namespacesToObserve.isEmpty()) {
             vars.add(new EnvVar(EntandoOperatorConfigProperty.ENTANDO_NAMESPACES_TO_OBSERVE.name(),
-                    namespacesToObserve.stream().collect(Collectors.joining(",")), null));
+                    String.join(",", namespacesToObserve), null));
         }
         return vars;
     }
