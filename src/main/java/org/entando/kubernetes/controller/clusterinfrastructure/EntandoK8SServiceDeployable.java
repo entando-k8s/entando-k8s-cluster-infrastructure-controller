@@ -33,7 +33,7 @@ public class EntandoK8SServiceDeployable extends InfrastructureDeployableBase {
     }
 
     @Override
-    public String getServiceAccountName() {
+    public String getDefaultServiceAccountName() {
         return "entando-k8s-service";
     }
 
@@ -50,6 +50,11 @@ public class EntandoK8SServiceDeployable extends InfrastructureDeployableBase {
     @Override
     public String getNameQualifier() {
         return "k8s-svc";
+    }
+
+    @Override
+    public String getServiceAccountToUse() {
+        return this.entandoClusterInfrastructure.getSpec().getServiceAccountToUse().orElse(getDefaultServiceAccountName());
     }
 
 }

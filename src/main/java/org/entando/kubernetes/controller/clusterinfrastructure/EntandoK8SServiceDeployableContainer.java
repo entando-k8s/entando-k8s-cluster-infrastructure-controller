@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.entando.kubernetes.controller.spi.container.ConfigurableResourceContainer;
 import org.entando.kubernetes.controller.spi.container.DatabaseSchemaConnectionInfo;
 import org.entando.kubernetes.controller.spi.container.DockerImageInfo;
@@ -34,13 +33,15 @@ import org.entando.kubernetes.controller.spi.container.SpringBootDeployableConta
 import org.entando.kubernetes.controller.support.common.EntandoOperatorConfig;
 import org.entando.kubernetes.controller.support.common.EntandoOperatorConfigProperty;
 import org.entando.kubernetes.controller.support.common.KubeUtils;
-import org.entando.kubernetes.model.EntandoIngressingDeploymentSpec;
+import org.entando.kubernetes.controller.support.spibase.KeycloakAwareContainerBase;
+import org.entando.kubernetes.model.DbmsVendor;
+import org.entando.kubernetes.model.EntandoResourceRequirements;
 import org.entando.kubernetes.model.KeycloakAwareSpec;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.plugin.ExpectedRole;
 
-public class EntandoK8SServiceDeployableContainer implements SpringBootDeployableContainer, ParameterizableContainer,
-        ConfigurableResourceContainer {
+public class EntandoK8SServiceDeployableContainer
+        implements SpringBootDeployableContainer, ParameterizableContainer, KeycloakAwareContainerBase, ConfigurableResourceContainer {
 
     public static final String K8S_SVC_QUALIFIER = "k8s-svc";
     private static final String ENTANDO_K8S_SERVICE_IMAGE_NAME = "entando/entando-k8s-service";
@@ -105,7 +106,7 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
                 new ExpectedRole(KubeUtils.ENTANDO_APP_ROLE),
                 new ExpectedRole(KubeUtils.ENTANDO_PLUGIN_ROLE)
         );
-        return new KeycloakClientConfig(determineRealm(),
+        return new KeycloakClientConfig(getKeycloakRealmToUse(),
                 clientId, "Entando K8S Service", clientRoles, null);
     }
 
@@ -134,19 +135,30 @@ public class EntandoK8SServiceDeployableContainer implements SpringBootDeployabl
     }
 
     @Override
-    public EntandoIngressingDeploymentSpec getCustomResourceSpec() {
-        return getKeycloakAwareSpec();
-    }
-
-    @Override
     public List<DatabaseSchemaConnectionInfo> getSchemaConnectionInfo() {
         //No database. This is legacy inherited from SpringBootDeployableContainer
         return Collections.emptyList();
     }
 
     @Override
+    public Optional<DbmsVendor> getDbms() {
+        //No database. This is legacy inherited from SpringBootDeployableContainer
+        return Optional.empty();
+    }
+
+    @Override
     public Optional<DatabaseSchemaConnectionInfo> getDatabaseSchema() {
         //No database. This is legacy inherited from SpringBootDeployableContainer
         return Optional.empty();
+    }
+
+    @Override
+    public Optional<EntandoResourceRequirements> getResourceRequirementsOverride() {
+        return entandoClusterInfrastructure.getSpec().getResourceRequirements();
+    }
+
+    @Override
+    public List<EnvVar> getEnvironmentVariableOverrides() {
+        return entandoClusterInfrastructure.getSpec().getEnvironmentVariables();
     }
 }
