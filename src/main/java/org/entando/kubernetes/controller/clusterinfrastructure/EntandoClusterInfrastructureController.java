@@ -23,6 +23,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.runtime.StartupEvent;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import org.entando.kubernetes.controller.spi.common.ResourceUtils;
 import org.entando.kubernetes.controller.spi.container.KeycloakConnectionConfig;
 import org.entando.kubernetes.controller.spi.result.ExposedDeploymentResult;
 import org.entando.kubernetes.controller.support.client.InfrastructureConfig;
@@ -58,7 +59,8 @@ public class EntandoClusterInfrastructureController extends
 
     @Override
     protected void synchronizeDeploymentState(EntandoClusterInfrastructure entandoClusterInfrastructure) {
-        KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources().findKeycloak(entandoClusterInfrastructure);
+        KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources()
+                .findKeycloak(entandoClusterInfrastructure, entandoClusterInfrastructure.getSpec()::getKeycloakToUse);
         ClusterInfrastructureDeploymentResult entandoK8SService = deployEntandoK8SService(entandoClusterInfrastructure,
                 keycloakConnectionConfig);
         saveClusterInfrastructureConnectionConfig(entandoClusterInfrastructure, entandoK8SService);
@@ -77,6 +79,7 @@ public class EntandoClusterInfrastructureController extends
         k8sClient.secrets().createConfigMapIfAbsent(entandoClusterInfrastructure, new ConfigMapBuilder()
                 .withNewMetadata()
                 .withName(InfrastructureConfig.connectionConfigMapNameFor(entandoClusterInfrastructure))
+                .addToOwnerReferences(ResourceUtils.buildOwnerReference(entandoClusterInfrastructure))
                 .endMetadata()
                 .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_CLIENT_ID_KEY, clientIdOf(entandoClusterInfrastructure))
                 .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_INTERNAL_URL_KEY, entandoK8SService.getInternalBaseUrl())

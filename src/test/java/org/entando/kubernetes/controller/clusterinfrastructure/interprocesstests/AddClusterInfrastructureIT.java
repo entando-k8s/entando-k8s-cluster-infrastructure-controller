@@ -28,7 +28,6 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import java.util.concurrent.TimeUnit;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoK8SServiceDeployableContainer;
-import org.entando.kubernetes.controller.integrationtest.support.ClusterInfrastructureIntegrationTestHelper;
 import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig;
 import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig.TestTarget;
 import org.entando.kubernetes.controller.integrationtest.support.FluentIntegrationTesting;
@@ -54,6 +53,7 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
     protected K8SIntegrationTestHelper helper = new K8SIntegrationTestHelper();
     protected DefaultKubernetesClient client = helper.getClient();
     protected EntandoClusterInfrastructureController controller = new EntandoClusterInfrastructureController(client, false);
+    private ClusterInfrastructureIntegrationTestHelper clusterInfrastructure = new ClusterInfrastructureIntegrationTestHelper(client);
 
     @BeforeEach
     public void cleanup() {
@@ -67,13 +67,17 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                         .fromNamespace(KeycloakIntegrationTestHelper.KEYCLOAK_NAMESPACE));
         helper.externalDatabases().deletePgTestPod(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE);
         if (EntandoOperatorTestConfig.getTestTarget() == TestTarget.K8S) {
-            helper.clusterInfrastructure()
+            clusterInfrastructure()
                     .listenAndRespondWithImageVersionUnderTest(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE);
         } else {
-            helper.clusterInfrastructure()
+            clusterInfrastructure()
                     .listenAndRespondWithStartupEvent(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE,
                             controller::onStartup);
         }
+    }
+
+    private ClusterInfrastructureIntegrationTestHelper clusterInfrastructure() {
+        return this.clusterInfrastructure;
     }
 
     @Test
@@ -95,7 +99,7 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                         + helper
                         .getDomainSuffix()).endSpec().build();
         SampleWriter.writeSample(clusterInfrastructure, "entando-cluster-infrastructure-with-embedded-postgresql-db");
-        helper.clusterInfrastructure().waitForClusterInfrastructure(clusterInfrastructure, 30, true);
+        clusterInfrastructure().waitForClusterInfrastructure(clusterInfrastructure, 30, true);
 
         //Then I expect to see
         verifyK8sServiceDeployment();
@@ -129,7 +133,7 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                 .get();
         assertThat(thePortNamed("k8s-svc-port").on(service).getPort(), is(8084));
         assertTrue(k8sSvcDeployment.getStatus().getReadyReplicas() >= 1);
-        assertTrue(helper.clusterInfrastructure().getOperations()
+        assertTrue(clusterInfrastructure().getOperations()
                 .inNamespace(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE)
                 .withName(CLUSTER_INFRASTRUCTURE_NAME)
                 .fromServer().get().getStatus().forServerQualifiedBy("k8s-svc").isPresent());
