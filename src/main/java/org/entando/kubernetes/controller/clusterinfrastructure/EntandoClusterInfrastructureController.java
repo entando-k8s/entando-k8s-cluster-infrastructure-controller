@@ -21,20 +21,21 @@ import static org.entando.kubernetes.controller.clusterinfrastructure.EntandoK8S
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.runtime.StartupEvent;
-import java.util.Optional;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
-import org.entando.kubernetes.controller.AbstractDbAwareController;
-import org.entando.kubernetes.controller.ExposedDeploymentResult;
-import org.entando.kubernetes.controller.IngressingDeployCommand;
-import org.entando.kubernetes.controller.KeycloakConnectionConfig;
-import org.entando.kubernetes.controller.SimpleKeycloakClient;
-import org.entando.kubernetes.controller.common.InfrastructureConfig;
-import org.entando.kubernetes.controller.k8sclient.SimpleK8SClient;
+import org.entando.kubernetes.controller.spi.common.ResourceUtils;
+import org.entando.kubernetes.controller.spi.container.KeycloakConnectionConfig;
+import org.entando.kubernetes.controller.spi.result.ExposedDeploymentResult;
+import org.entando.kubernetes.controller.support.client.InfrastructureConfig;
+import org.entando.kubernetes.controller.support.client.SimpleK8SClient;
+import org.entando.kubernetes.controller.support.client.SimpleKeycloakClient;
+import org.entando.kubernetes.controller.support.command.IngressingDeployCommand;
+import org.entando.kubernetes.controller.support.controller.AbstractDbAwareController;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureSpec;
 
-public class EntandoClusterInfrastructureController extends AbstractDbAwareController<EntandoClusterInfrastructure> {
+public class EntandoClusterInfrastructureController extends
+        AbstractDbAwareController<EntandoClusterInfrastructureSpec, EntandoClusterInfrastructure> {
 
     @Inject
     public EntandoClusterInfrastructureController(KubernetesClient kubernetesClient) {
@@ -58,7 +59,8 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
 
     @Override
     protected void synchronizeDeploymentState(EntandoClusterInfrastructure entandoClusterInfrastructure) {
-        KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources().findKeycloak(entandoClusterInfrastructure);
+        KeycloakConnectionConfig keycloakConnectionConfig = k8sClient.entandoResources()
+                .findKeycloak(entandoClusterInfrastructure, entandoClusterInfrastructure.getSpec()::getKeycloakToUse);
         ClusterInfrastructureDeploymentResult entandoK8SService = deployEntandoK8SService(entandoClusterInfrastructure,
                 keycloakConnectionConfig);
         saveClusterInfrastructureConnectionConfig(entandoClusterInfrastructure, entandoK8SService);
@@ -77,6 +79,7 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
         k8sClient.secrets().createConfigMapIfAbsent(entandoClusterInfrastructure, new ConfigMapBuilder()
                 .withNewMetadata()
                 .withName(InfrastructureConfig.connectionConfigMapNameFor(entandoClusterInfrastructure))
+                .addToOwnerReferences(ResourceUtils.buildOwnerReference(entandoClusterInfrastructure))
                 .endMetadata()
                 .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_CLIENT_ID_KEY, clientIdOf(entandoClusterInfrastructure))
                 .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_INTERNAL_URL_KEY, entandoK8SService.getInternalBaseUrl())
@@ -87,9 +90,9 @@ public class EntandoClusterInfrastructureController extends AbstractDbAwareContr
     private ClusterInfrastructureDeploymentResult deployEntandoK8SService(EntandoClusterInfrastructure entandoClusterInfrastructure,
             KeycloakConnectionConfig keycloakConnectionConfig) {
         EntandoK8SServiceDeployable deployable = new EntandoK8SServiceDeployable(entandoClusterInfrastructure, keycloakConnectionConfig);
-        IngressingDeployCommand<ClusterInfrastructureDeploymentResult, EntandoClusterInfrastructureSpec> command =
+        IngressingDeployCommand<ClusterInfrastructureDeploymentResult> command =
                 new IngressingDeployCommand<>(deployable);
-        ClusterInfrastructureDeploymentResult result = command.execute(k8sClient, Optional.of(keycloakClient));
+        ClusterInfrastructureDeploymentResult result = command.execute(k8sClient, keycloakClient);
         k8sClient.entandoResources().updateStatus(entandoClusterInfrastructure, command.getStatus());
         return result;
     }

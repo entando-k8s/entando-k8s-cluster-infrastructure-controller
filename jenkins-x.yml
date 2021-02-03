@@ -6,9 +6,16 @@ pipelineConfig:
     - name: TEST_DEPLOYMENT
       value: "true"
     - name: ENTANDO_DOCKER_IMAGE_INFO_CONFIGMAP
-      value: "entando-docker-image-info-v6.1"
+      value: "entando-docker-image-info-v6.3"
     - name: ENTANDO_K8S_OPERATOR_SECURITY_MODE
       value: "strict"
+    - name: RELATED_IMAGE_ENTANDO_K8S_SERVICE
+      value: entando/entando-k8s-service@sha256:f0280ee845571eac1f5b673a67ba757b87e5eac7ca743daab7f3e4f1ac54a1b6
+    - name: ENTANDO_TEST_REDHAT_REGISTRY_CREDENTIALS
+      valueFrom:
+        secretKeyRef:
+          key: redhat.registry.credentials
+          name: entando-jx-common-secret
     - name: EXECUTABLE_TYPE
       valueFrom:
         secretKeyRef:
