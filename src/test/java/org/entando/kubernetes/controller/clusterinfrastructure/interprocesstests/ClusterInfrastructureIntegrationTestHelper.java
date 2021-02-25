@@ -18,19 +18,17 @@ package org.entando.kubernetes.controller.clusterinfrastructure.interprocesstest
 
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import java.time.Duration;
-import org.entando.kubernetes.controller.integrationtest.podwaiters.ServicePodWaiter;
-import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig;
-import org.entando.kubernetes.controller.integrationtest.support.IntegrationTestHelperBase;
-import org.entando.kubernetes.controller.support.client.InfrastructureConfig;
+import org.entando.kubernetes.client.EntandoOperatorTestConfig;
 import org.entando.kubernetes.model.EntandoCustomResourceStatus;
 import org.entando.kubernetes.model.EntandoDeploymentPhase;
-import org.entando.kubernetes.model.ResourceReference;
 import org.entando.kubernetes.model.infrastructure.DoneableEntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureList;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureOperationFactory;
+import org.entando.kubernetes.test.e2etest.helpers.E2ETestHelperBase;
+import org.entando.kubernetes.test.e2etest.podwaiters.ServicePodWaiter;
 
-public class ClusterInfrastructureIntegrationTestHelper extends IntegrationTestHelperBase<
+public class ClusterInfrastructureIntegrationTestHelper extends E2ETestHelperBase<
         EntandoClusterInfrastructure,
         EntandoClusterInfrastructureList,
         DoneableEntandoClusterInfrastructure
@@ -42,29 +40,6 @@ public class ClusterInfrastructureIntegrationTestHelper extends IntegrationTestH
 
     ClusterInfrastructureIntegrationTestHelper(DefaultKubernetesClient client) {
         super(client, EntandoClusterInfrastructureOperationFactory::produceAllEntandoClusterInfrastructures);
-    }
-
-    public void ensureInfrastructureConnectionConfig() {
-        loadDefaultOperatorConfigMap()
-                .addToData(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAMESPACE_KEY, CLUSTER_INFRASTRUCTURE_NAMESPACE)
-                .addToData(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAME_KEY, CLUSTER_INFRASTRUCTURE_NAME)
-                .done();
-        ResourceReference infrastructureToUse = new ResourceReference(CLUSTER_INFRASTRUCTURE_NAMESPACE, CLUSTER_INFRASTRUCTURE_NAME);
-        delete(client.configMaps())
-                .named(InfrastructureConfig.connectionConfigMapNameFor(infrastructureToUse))
-                .fromNamespace(CLUSTER_INFRASTRUCTURE_NAMESPACE)
-                .waitingAtMost(20, SECONDS);
-        String hostName = "http://" + CLUSTER_INFRASTRUCTURE_NAME + "." + getDomainSuffix();
-        client.configMaps()
-                .inNamespace(CLUSTER_INFRASTRUCTURE_NAMESPACE)
-                .createNew()
-                .withNewMetadata()
-                .withName(InfrastructureConfig.connectionConfigMapNameFor(infrastructureToUse))
-                .endMetadata()
-                .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_CLIENT_ID_KEY, CLUSTER_INFRASTRUCTURE_NAME + "-k8s-svc")
-                .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_INTERNAL_URL_KEY, hostName + "/k8s")
-                .addToData(InfrastructureConfig.ENTANDO_K8S_SERVICE_EXTERNAL_URL_KEY, hostName + "/k8s")
-                .done();
     }
 
     public void waitForClusterInfrastructure(EntandoClusterInfrastructure infrastructure, int waitOffset, boolean deployingDbContainers) {

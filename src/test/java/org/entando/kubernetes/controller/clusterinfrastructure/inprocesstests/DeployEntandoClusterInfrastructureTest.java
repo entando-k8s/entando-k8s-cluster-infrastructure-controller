@@ -44,21 +44,22 @@ import io.quarkus.runtime.StartupEvent;
 import java.util.Collections;
 import java.util.Map;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
-import org.entando.kubernetes.controller.inprocesstest.InProcessTestUtil;
-import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.KeycloakClientConfigArgumentCaptor;
-import org.entando.kubernetes.controller.inprocesstest.argumentcaptors.NamedArgumentCaptor;
-import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.EntandoResourceClientDouble;
-import org.entando.kubernetes.controller.inprocesstest.k8sclientdouble.SimpleK8SClientDouble;
 import org.entando.kubernetes.controller.spi.common.NameUtils;
 import org.entando.kubernetes.controller.spi.container.KeycloakClientConfig;
 import org.entando.kubernetes.controller.spi.container.KeycloakName;
 import org.entando.kubernetes.controller.support.client.InfrastructureConfig;
 import org.entando.kubernetes.controller.support.client.SimpleK8SClient;
 import org.entando.kubernetes.controller.support.client.SimpleKeycloakClient;
+import org.entando.kubernetes.controller.support.client.doubles.EntandoResourceClientDouble;
+import org.entando.kubernetes.controller.support.client.doubles.SimpleK8SClientDouble;
 import org.entando.kubernetes.controller.support.common.KubeUtils;
-import org.entando.kubernetes.controller.test.support.FluentTraversals;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureBuilder;
+import org.entando.kubernetes.test.common.FluentTraversals;
+import org.entando.kubernetes.test.common.InProcessTestData;
+import org.entando.kubernetes.test.componenttest.InProcessTestUtil;
+import org.entando.kubernetes.test.componenttest.argumentcaptors.KeycloakClientConfigArgumentCaptor;
+import org.entando.kubernetes.test.componenttest.argumentcaptors.NamedArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -142,9 +143,9 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
         assertThat(infrastructureUrlsSecret.getData().get(InfrastructureConfig.ENTANDO_K8S_SERVICE_EXTERNAL_URL_KEY),
                 is("https://entando-infra.192.168.0.100.nip.io/k8s"));
         //And the Operator's default ConfigMap points to the previously created EntandoClusterInfrastructure as default
-        assertThat(client.entandoResources().loadDefaultConfigMap().getData()
+        assertThat(client.entandoResources().loadDefaultCapabilitiesConfigMap().getData()
                 .get(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAME_KEY), is(MY_CLUSTER_INFRASTRUCTURE));
-        assertThat(client.entandoResources().loadDefaultConfigMap().getData()
+        assertThat(client.entandoResources().loadDefaultCapabilitiesConfigMap().getData()
                 .get(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAMESPACE_KEY), is(MY_CLUSTER_INFRASTRUCTURE_NAMESPACE));
     }
 
@@ -233,7 +234,7 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
         entandoClusterInfrastructureController.onStartup(new StartupEvent());
 
         verify(keycloakClient, times(1))
-                .login(eq(MY_KEYCLOAK_BASE_URL), eq(MY_KEYCLOAK_ADMIN_USERNAME), anyString());
+                .login(eq(InProcessTestData.MY_KEYCLOAK_BASE_URL), eq(MY_KEYCLOAK_ADMIN_USERNAME), anyString());
         verifyEntandoK8SServiceDeployment(newEntandoClusterInfrastructure, entandok8SServiceDeploymentStatus);
 
     }
