@@ -65,7 +65,7 @@ public class EntandoClusterInfrastructureController extends
                 keycloakConnectionConfig);
         saveClusterInfrastructureConnectionConfig(entandoClusterInfrastructure, entandoK8SService);
         if (entandoClusterInfrastructure.getSpec().isDefault()) {
-            k8sClient.entandoResources().loadDefaultConfigMap()
+            k8sClient.entandoResources().loadDefaultCapabilitiesConfigMap()
                     .addToData(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAMESPACE_KEY,
                             entandoClusterInfrastructure.getMetadata().getNamespace())
                     .addToData(InfrastructureConfig.DEFAULT_CLUSTER_INFRASTRUCTURE_NAME_KEY,

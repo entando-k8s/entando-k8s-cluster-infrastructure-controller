@@ -26,20 +26,20 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import java.util.concurrent.TimeUnit;
+import org.entando.kubernetes.client.EntandoOperatorTestConfig;
+import org.entando.kubernetes.client.EntandoOperatorTestConfig.TestTarget;
+import org.entando.kubernetes.client.integrationtesthelpers.FluentIntegrationTesting;
+import org.entando.kubernetes.client.integrationtesthelpers.HttpTestHelper;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoClusterInfrastructureController;
 import org.entando.kubernetes.controller.clusterinfrastructure.EntandoK8SServiceDeployableContainer;
-import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig;
-import org.entando.kubernetes.controller.integrationtest.support.EntandoOperatorTestConfig.TestTarget;
-import org.entando.kubernetes.controller.integrationtest.support.FluentIntegrationTesting;
-import org.entando.kubernetes.controller.integrationtest.support.HttpTestHelper;
-import org.entando.kubernetes.controller.integrationtest.support.K8SIntegrationTestHelper;
-import org.entando.kubernetes.controller.integrationtest.support.KeycloakIntegrationTestHelper;
-import org.entando.kubernetes.controller.integrationtest.support.SampleWriter;
 import org.entando.kubernetes.controller.support.client.InfrastructureConfig;
 import org.entando.kubernetes.model.DbmsVendor;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructure;
 import org.entando.kubernetes.model.infrastructure.EntandoClusterInfrastructureBuilder;
 import org.entando.kubernetes.model.keycloakserver.EntandoKeycloakServer;
+import org.entando.kubernetes.test.e2etest.common.SampleWriter;
+import org.entando.kubernetes.test.e2etest.helpers.K8SIntegrationTestHelper;
+import org.entando.kubernetes.test.e2etest.helpers.KeycloakE2ETestHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -59,12 +59,12 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
     public void cleanup() {
         client = helper.getClient();
         helper.keycloak().prepareDefaultKeycloakSecretAndConfigMap();
-        helper.keycloak().deleteRealm(KeycloakIntegrationTestHelper.KEYCLOAK_REALM);
+        helper.keycloak().deleteRealm(KeycloakE2ETestHelper.KEYCLOAK_REALM);
         helper.setTextFixture(
                 deleteAll(EntandoClusterInfrastructure.class)
                         .fromNamespace(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE)
                         .deleteAll(EntandoKeycloakServer.class)
-                        .fromNamespace(KeycloakIntegrationTestHelper.KEYCLOAK_NAMESPACE));
+                        .fromNamespace(KeycloakE2ETestHelper.KEYCLOAK_NAMESPACE));
         helper.externalDatabases().deletePgTestPod(ClusterInfrastructureIntegrationTestHelper.CLUSTER_INFRASTRUCTURE_NAMESPACE);
         if (EntandoOperatorTestConfig.getTestTarget() == TestTarget.K8S) {
             clusterInfrastructure()
@@ -92,7 +92,7 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                 .withDbms(DbmsVendor.POSTGRESQL)//Ignore atm
                 .withDefault(true)
                 .withNewKeycloakToUse()
-                .withRealm(KeycloakIntegrationTestHelper.KEYCLOAK_REALM)
+                .withRealm(KeycloakE2ETestHelper.KEYCLOAK_REALM)
                 .endKeycloakToUse()
                 .withReplicas(1)
                 .withIngressHostName(CLUSTER_INFRASTRUCTURE_NAME + "."
@@ -139,7 +139,7 @@ class AddClusterInfrastructureIT implements FluentIntegrationTesting {
                 .fromServer().get().getStatus().forServerQualifiedBy("k8s-svc").isPresent());
         String k8sServiceClientId = CLUSTER_INFRASTRUCTURE_NAME + "-"
                 + EntandoK8SServiceDeployableContainer.K8S_SVC_QUALIFIER;
-        assertTrue(helper.keycloak().findClientById(KeycloakIntegrationTestHelper.KEYCLOAK_REALM, k8sServiceClientId).isPresent());
+        assertTrue(helper.keycloak().findClientById(KeycloakE2ETestHelper.KEYCLOAK_REALM, k8sServiceClientId).isPresent());
 
     }
 
