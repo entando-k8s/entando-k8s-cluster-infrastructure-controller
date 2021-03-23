@@ -130,6 +130,7 @@ public class EntandoK8SServiceDeployableContainer
         return Arrays.asList(new KubernetesPermission("entando.org", "*", "*"),
                 new KubernetesPermission("", "secrets", "create", "get", "update", "delete"),
                 new KubernetesPermission("", "configmaps", "*"),
+                new KubernetesPermission("extensions", "ingresses", "*"),
                 new KubernetesPermission("", "namespaces", "get")
         );
     }
