@@ -38,7 +38,7 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceStatus;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentStatus;
-import io.fabric8.kubernetes.api.model.extensions.Ingress;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.Watcher.Action;
 import io.quarkus.runtime.StartupEvent;
 import java.util.Collections;
@@ -212,8 +212,8 @@ class DeployEntandoClusterInfrastructureTest implements InProcessTestUtil, Fluen
         //With a path that reflects webcontext of the EntandoK8sSvc
         theHttpPath(K8S).on(resultingIngress);
         //that is mapped to the previously created HTTP service
-        assertThat(theBackendFor(K8S).on(resultingIngress).getServicePort().getIntVal(), is(PORT_8084));
-        assertThat(theBackendFor(K8S).on(resultingIngress).getServiceName(), is(MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SERVICE));
+        assertThat(theBackendFor(K8S).on(resultingIngress).getService().getPort().getNumber(), is(PORT_8084));
+        assertThat(theBackendFor(K8S).on(resultingIngress).getService().getName(), is(MY_CLUSTER_INFRASTRUCTURE_K8S_SVC_SERVICE));
     }
 
     @Test
